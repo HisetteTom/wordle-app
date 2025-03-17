@@ -1,3 +1,8 @@
+import { wordleService } from './services/api';
+
+
+
+
 // Disposition du clavier
 export const keyboardRows = [
   ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -53,44 +58,7 @@ export const updateKeyboardStatus = (attempt, result, keyboardStatus, wordLength
   return newStatus;
 };
 
-export const getRandomWord = async (length) => {
-  try {
-    // Utiliser l'URL de production en production, localhost en développement
-    const API_URL = process.env.NODE_ENV === 'production' 
-      ? 'https://wordle-app-gym5.onrender.com/api' 
-      : 'http://localhost:3001/api';
-    
-    const response = await fetch(`${API_URL}/words/random/${length}`);
-    
-    if (!response.ok) {
-      throw new Error('Erreur lors de la récupération d\'un mot');
-    }
-    
-    const data = await response.json();
-    return data.word;
-  } catch (error) {
-    console.error('Erreur:', error);
-  }
-};
 
-// Vous pouvez également ajouter une fonction pour valider les tentatives
-export const isValidWord = async (word) => {
-  try {
-    // Utiliser la même URL que pour getRandomWord
-    const API_URL = process.env.NODE_ENV === 'production' 
-      ? 'https://wordle-app-gym5.onrender.com/api' 
-      : 'http://localhost:3001/api';
-    
-    const response = await fetch(`${API_URL}/words/validate/${word}`);
-    
-    if (!response.ok) {
-      return false;
-    }
-    
-    const data = await response.json();
-    return data.isValid;
-  } catch (error) {
-    console.error('Erreur lors de la validation du mot:', error);
-    return true; // En cas d'erreur, considérer le mot comme valide
-  }
-};
+
+export const getRandomWord = wordleService.getRandomWord;
+export const isValidWord = wordleService.isValidWord;

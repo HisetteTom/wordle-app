@@ -1,39 +1,92 @@
-// src/services/api.js
-const API_URL = 'http://localhost:3001/api';
+// Service pour gérer toutes les requêtes API
 
+// URL de base de l'API, avec détection automatique de l'environnement
+const API_URL = process.env.NODE_ENV === 'production'
+  ? 'https://wordle-app-gym5.onrender.com/api'
+  : 'http://localhost:3001/api';
+
+// Service pour le dictionnaire
 export const dictionaryService = {
-  // Chercher la définition d'un mot
-  async getDefinition(word) {
-    try {
-      const response = await fetch(`${API_URL}/definition/${encodeURIComponent(word)}`);
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(`Aucune définition trouvée pour "${word}"`);
-        }
-        throw new Error('Erreur de serveur');
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('API error:', error);
-      throw error;
-    }
-  },
-  
   // Obtenir la liste des mots disponibles
-  async getAvailableWords() {
+  getAvailableWords: async () => {
     try {
       const response = await fetch(`${API_URL}/available-words`);
       
       if (!response.ok) {
-        throw new Error('Erreur lors de la récupération des mots disponibles');
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
       
       return await response.json();
     } catch (error) {
-      console.error('API error:', error);
-      return [];
+      console.error('Erreur lors de la récupération des mots disponibles:', error);
+      // Retourner la liste des mots disponibles connue du serveur
+      return ["maison", "livre", "jouer", "chat", "chien"];
+    }
+  },
+  
+  // Obtenir la définition d'un mot
+  getDefinition: async (word) => {
+    try {
+      const response = await fetch(`${API_URL}/definition/${word}`);
+      
+      if (!response.ok) {
+        throw new Error(`Aucune définition trouvée pour "${word}"`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la définition:', error);
+      throw error;
+    }
+  }
+};
+
+// Service pour le jeu Wordle
+export const wordleService = {
+  // Obtenir un mot aléatoire d'une longueur spécifique
+  getRandomWord: async (length) => {
+    try {
+      const response = await fetch(`${API_URL}/words/random/${length}`);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération d\'un mot');
+      }
+      
+      const data = await response.json();
+      return data.word;
+    } catch (error) {
+      console.error('Erreur:', error);
+      
+      // Fallback en cas d'erreur
+      const fallbackWords = {
+        4: ['CHAT', 'LUNE', 'BLEU', 'VOIX', 'VENT'],
+        5: ['JOUER', 'PIANO', 'LIVRE', 'AVOIR', 'COEUR'],
+        6: ['ORANGE', 'JARDIN', 'MARCHE', 'PLEINS', 'SALUER'],
+        7: ['BONJOUR', 'TRAVAIL', 'MARIAGE', 'CUISINE', 'NOUVEAU'],
+        8: ['CHATOYEZ', 'ABJECTES', 'ADJACENT', 'SOMMAIRE', 'GRACIEUX'],
+        9: ['ACCOUDOIR', 'AIGUILLER', 'EPUISABLE', 'BOULEVARD', 'PARTICULE'],
+        10: ['PERSONNAGE', 'BOULEVARD', 'GOUVERNER', 'ABRICOTIER', 'ASTRONAUTE']
+      };
+      
+      const wordList = fallbackWords[length] || ['PIANO'];
+      return wordList[Math.floor(Math.random() * wordList.length)];
+    }
+  },
+  
+  // Vérifier si un mot existe
+  isValidWord: async (word) => {
+    try {
+      const response = await fetch(`${API_URL}/words/validate/${word}`);
+      
+      if (!response.ok) {
+        return false;
+      }
+      
+      const data = await response.json();
+      return data.isValid;
+    } catch (error) {
+      console.error('Erreur lors de la validation du mot:', error);
+      return true; // En cas d'erreur, considérer le mot comme valide
     }
   }
 };
