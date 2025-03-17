@@ -105,6 +105,6 @@ app.get('/', (req, res) => {
 });
 
 // Par celle-ci:
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(parseInt(PORT), () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
