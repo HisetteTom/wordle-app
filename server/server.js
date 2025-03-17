@@ -17,11 +17,10 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-  }));
-  app.use(express.json());
+  origin: ['https://wordle-game-822bb.web.app', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 
 
   
@@ -105,7 +104,7 @@ app.get('/', (req, res) => {
   res.send('Serveur dictionnaire et multijoueur pour Wordle en fonctionnement!');
 });
 
-// Démarrer le serveur
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+// Par celle-ci:
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Serveur démarré sur le port ${PORT}`);
 });

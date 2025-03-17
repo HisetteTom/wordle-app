@@ -1,0 +1,11 @@
+# server/render.yaml
+services:
+  - type: web
+    name: wordle-server
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production

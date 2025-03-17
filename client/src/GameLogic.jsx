@@ -55,7 +55,12 @@ export const updateKeyboardStatus = (attempt, result, keyboardStatus, wordLength
 
 export const getRandomWord = async (length) => {
   try {
-    const response = await fetch(`http://localhost:3001/api/words/random/${length}`);
+    // Utiliser l'URL de production en production, localhost en développement
+    const API_URL = process.env.NODE_ENV === 'production' 
+      ? 'https://votre-app-render.onrender.com/api' 
+      : 'http://localhost:3001/api';
+    
+    const response = await fetch(`${API_URL}/words/random/${length}`);
     
     if (!response.ok) {
       throw new Error('Erreur lors de la récupération d\'un mot');
