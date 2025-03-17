@@ -57,7 +57,7 @@ export const getRandomWord = async (length) => {
   try {
     // Utiliser l'URL de production en production, localhost en développement
     const API_URL = process.env.NODE_ENV === 'production' 
-      ? 'https://votre-app-render.onrender.com/api' 
+      ? 'https://wordle-app-gym5.onrender.com/api' 
       : 'http://localhost:3001/api';
     
     const response = await fetch(`${API_URL}/words/random/${length}`);
@@ -76,7 +76,12 @@ export const getRandomWord = async (length) => {
 // Vous pouvez également ajouter une fonction pour valider les tentatives
 export const isValidWord = async (word) => {
   try {
-    const response = await fetch(`http://localhost:3001/api/words/validate/${word}`);
+    // Utiliser la même URL que pour getRandomWord
+    const API_URL = process.env.NODE_ENV === 'production' 
+      ? 'https://wordle-app-gym5.onrender.com/api' 
+      : 'http://localhost:3001/api';
+    
+    const response = await fetch(`${API_URL}/words/validate/${word}`);
     
     if (!response.ok) {
       return false;
@@ -86,6 +91,6 @@ export const isValidWord = async (word) => {
     return data.isValid;
   } catch (error) {
     console.error('Erreur lors de la validation du mot:', error);
-    return true; // En cas d'erreur, considérer le mot comme valide pour ne pas bloquer le jeu
+    return true; // En cas d'erreur, considérer le mot comme valide
   }
 };
