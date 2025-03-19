@@ -139,7 +139,7 @@ const HintBox = ({ targetWord, onHintUsed }) => {
 
   return (
     <div className="fixed left-4 top-1/3 z-40">
-      <div className="bg-white rounded-lg shadow-lg p-4 w-72 border-r-4 border-green-500 animate-fadeIn">
+      <div className="bg-white rounded-lg shadow-lg p-4 w-72 border-l-4 border-green-500 animate-fadeIn">
         <div className="flex justify-between items-center mb-3">
           <h3 className="font-bold text-lg text-green-700 flex items-center">
             <LightBulbIcon className="h-5 w-5 mr-2" />
