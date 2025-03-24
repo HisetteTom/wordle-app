@@ -1,5 +1,8 @@
 // Service pour gérer toutes les requêtes API
 
+import { removeAccents } from "../utils/stringUtils";
+
+
 // URL de base de l'API, avec détection automatique de l'environnement
 const API_URL = process.env.NODE_ENV === 'production'
   ? 'https://wordle-app-gym5.onrender.com/api'
@@ -21,6 +24,27 @@ export const dictionaryService = {
       console.error('Erreur lors de la récupération des mots disponibles:', error);
       // Retourner la liste des mots disponibles connue du serveur
       return ["maison", "livre", "jouer", "chat", "chien"];
+    }
+  },
+
+  getDefinitionByNormalized: async (normalizedWord) => {
+    try {
+      // D'abord, récupérer la liste des mots disponibles
+      const availableWords = await dictionaryService.getAvailableWords();
+      
+      // Chercher un mot qui correspond après normalisation
+      const matchingWord = availableWords.find(word => 
+        removeAccents(word.toLowerCase()) === normalizedWord.toLowerCase()
+      );
+      
+      if (matchingWord) {
+        // Si on trouve une correspondance, rechercher sa définition
+        return await dictionaryService.getDefinition(matchingWord);
+      } else {
+        throw new Error(`Aucun mot correspondant à "${normalizedWord}" trouvé`);
+      }
+    } catch (error) {
+      throw error;
     }
   },
   
@@ -76,6 +100,10 @@ export const wordleService = {
   // Vérifier si un mot existe
   isValidWord: async (word) => {
     try {
+      const API_URL = process.env.NODE_ENV === 'production'
+        ? 'https://wordle-app-gym5.onrender.com/api'
+        : 'http://localhost:3001/api';
+      
       const response = await fetch(`${API_URL}/words/validate/${word}`);
       
       if (!response.ok) {
@@ -86,7 +114,10 @@ export const wordleService = {
       return data.isValid;
     } catch (error) {
       console.error('Erreur lors de la validation du mot:', error);
-      return true; // En cas d'erreur, considérer le mot comme valide
+      
+      // Fallback en cas d'erreur: accepter le mot
+      // Vous pourriez ajouter une validation locale ici
+      return true;
     }
   }
 };

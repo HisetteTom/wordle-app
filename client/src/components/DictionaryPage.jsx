@@ -5,14 +5,104 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { dictionaryService } from "../services/api";
+import { removeAccents } from "../utils/stringUtils";
 
-const DictionaryPage = ({ onBack }) => {
-  const [searchTerm, setSearchTerm] = useState("");
+const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [definition, setDefinition] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [recentSearches, setRecentSearches] = useState([]);
   const [availableWords, setAvailableWords] = useState([]);
+
+  const searchWord = async (word) => {
+    if (!word.trim()) return;
+  
+    setLoading(true);
+    setError(null);
+  
+    try {
+      // Tentative 1: recherche directe du mot tel quel
+      console.log("Tentative 1: recherche directe de", word);
+      const data = await dictionaryService.getDefinition(word);
+  
+      // Si trouvé, afficher la définition
+      const formattedDefinition = {
+        word: data.word,
+        category: data.category,
+        definitions: [data.definition],
+      };
+  
+      setDefinition(formattedDefinition);
+      
+      // Ajouter aux recherches récentes
+      if (!recentSearches.includes(word)) {
+        const newSearches = [word, ...recentSearches.slice(0, 4)];
+        setRecentSearches(newSearches);
+        localStorage.setItem("wordleRecentSearches", JSON.stringify(newSearches));
+      }
+    } catch (error) {
+      console.error("Recherche directe échouée:", error);
+  
+      try {
+        // Tentative 2: chercher parmi les mots disponibles un mot qui correspond après normalisation
+        console.log("Tentative 2: recherche par normalisation pour", word);
+        
+        // Si nous avons des mots disponibles dans le dictionnaire
+        if (availableWords && availableWords.length > 0) {
+          const normalizedSearchTerm = removeAccents(word.toLowerCase());
+          
+          // Chercher un mot dans le dictionnaire qui, une fois les accents retirés, correspond au terme recherché
+          const matchingWord = availableWords.find(dictWord => 
+            removeAccents(dictWord.toLowerCase()) === normalizedSearchTerm
+          );
+          
+          if (matchingWord) {
+            console.log("Mot correspondant trouvé:", matchingWord);
+            
+            // Rechercher la définition du mot avec accents trouvé
+            const data = await dictionaryService.getDefinition(matchingWord);
+            
+            setDefinition({
+              word: data.word,
+              category: data.category,
+              definitions: [data.definition],
+              original: word // Garder le mot original pour référence
+            });
+            
+            return; // Sortir de la fonction car recherche réussie
+          }
+        }
+        
+        // Si on n'a pas trouvé de correspondance dans la liste locale,
+        // essayer l'API spéciale pour les mots normalisés
+        console.log("Tentative 3: API spéciale pour normalisation");
+        const normalizedWord = removeAccents(word.toLowerCase());
+        const data = await dictionaryService.getDefinitionByNormalized(normalizedWord);
+        
+        setDefinition({
+          word: data.word,
+          category: data.category,
+          definitions: [data.definition],
+          original: word
+        });
+      } catch (innerError) {
+        console.error("Toutes les tentatives ont échoué:", innerError);
+        setError(`Le mot "${word}" n'a pas été trouvé dans notre dictionnaire.`);
+        setDefinition(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Ajoutez cet effet après les autres useEffect existants
+  useEffect(() => {
+    // Recherche automatique si un terme initial est fourni
+    if (initialSearchTerm) {
+      searchWord(initialSearchTerm);
+    }
+  }, [initialSearchTerm]); // Ce useEffect s'exécute uniquement lorsque initialSearchTerm change
 
   // Charger les mots disponibles au démarrage
   useEffect(() => {
@@ -29,41 +119,7 @@ const DictionaryPage = ({ onBack }) => {
   }, []);
 
   // Fonction pour chercher un mot via notre API
-  const searchWord = async (word) => {
-    if (!word) return;
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await dictionaryService.getDefinition(word);
-
-      // Formater la définition pour notre interface
-      const formattedDefinition = {
-        word: data.word,
-        category: data.category,
-        definitions: [data.definition],
-      };
-
-      setDefinition(formattedDefinition);
-
-      // Ajouter à l'historique de recherche
-      if (!recentSearches.includes(word)) {
-        const newSearches = [word, ...recentSearches.slice(0, 4)];
-        setRecentSearches(newSearches);
-        localStorage.setItem(
-          "wordleRecentSearches",
-          JSON.stringify(newSearches)
-        );
-      }
-    } catch (err) {
-      console.error("Erreur de recherche:", err);
-      setError(err.message);
-      setDefinition(null);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Charger l'historique de recherche au chargement de la page
   useEffect(() => {

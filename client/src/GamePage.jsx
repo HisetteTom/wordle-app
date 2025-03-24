@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon,BookOpenIcon } from "@heroicons/react/24/outline";
 
 // Composants
 import GameBoard from "./components/GameBoard";
@@ -11,6 +11,7 @@ import GameControls from "./components/GameControls";
 import UserStats from "./components/UserStats";
 import ScoreAnimation from "./components/ScoreAnimation";
 import HintBox from "./components/Hintbox";
+import DictionaryPage from "./components/DictionaryPage";
 
 // Hooks
 import { useGameLogic } from "./hooks/useGameLogic";
@@ -34,6 +35,24 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
     score: 0,
   });
 
+  // Nouvel état pour gérer l'affichage du dictionnaire
+  const [showDictionary, setShowDictionary] = useState(false);
+  const [dictionaryWord, setDictionaryWord] = useState("");
+
+  const handleViewDictionary = (word) => {
+    setDictionaryWord(word);
+    setShowDictionary(true);
+  };
+
+  // Fonction pour revenir du dictionnaire au jeu
+  const handleReturnFromDictionary = () => {
+    setShowDictionary(false);
+  };
+
+  // Si on affiche le dictionnaire
+
+
+  // Définir handleStatsUpdated AVANT de l'utiliser dans useGameLogic
   const handleStatsUpdated = (statsUpdate) => {
     if (currentUser) {
       setUserStats((prev) => ({
@@ -52,6 +71,26 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
       }
     }
   };
+
+  // Utiliser le hook pour la logique du jeu
+  const {
+    attempts,
+    currentAttempt,
+    attemptResults,
+    keyboardStatus,
+    targetWord,
+    handleInput,
+    resetGame,
+    gameOver,
+    gameWon,
+    errorMessage,
+  } = useGameLogic(
+    wordLength,
+    maxAttempts,
+    currentUser,
+    handleStatsUpdated,
+    hintsUsed
+  );
 
   // Gestionnaire pour masquer l'animation une fois terminée
   const handleAnimationComplete = () => {
@@ -98,18 +137,9 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
     fetchUserStats();
   }, [currentUser]);
 
-  // Utiliser le hook pour la logique du jeu
-  const gameLogic = useGameLogic(
-    wordLength,
-    maxAttempts,
-    currentUser,
-    handleStatsUpdated,
-    hintsUsed
-  );
-
   const handleRestartGame = () => {
-    if (gameLogic && typeof gameLogic.resetGame === "function") {
-      gameLogic.resetGame();
+    if (typeof resetGame === "function") {
+      resetGame();
 
       window.scrollTo({
         top: 0,
@@ -130,6 +160,15 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
       onBack();
     }
   };
+
+  if (showDictionary) {
+    return (
+      <DictionaryPage
+        onBack={handleReturnFromDictionary}
+        initialSearchTerm={dictionaryWord}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-200 flex flex-col items-center pt-10 pb-20">
@@ -160,10 +199,17 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
         </div>
       )}
 
+      {/* Message d'erreur flottant */}
+      {errorMessage && (
+        <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Utilisation d'indice */}
       <HintBox
-        key={gameLogic.targetWord || "loading"} // Forcer la recréation quand le mot change
-        targetWord={gameLogic.targetWord}
+        key={targetWord || "loading"} // Forcer la recréation quand le mot change
+        targetWord={targetWord}
         onHintUsed={(hintCount) => {
           setHintsUsed(hintCount);
         }}
@@ -177,32 +223,33 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
       <div className="game-container transition-opacity duration-300 flex flex-col items-center w-full">
         <div className="flex justify-center w-full">
           <GameBoard
-            attempts={gameLogic.attempts}
-            currentAttempt={gameLogic.currentAttempt}
-            attemptResults={gameLogic.attemptResults}
+            attempts={attempts}
+            currentAttempt={currentAttempt}
+            attemptResults={attemptResults}
             wordLength={wordLength}
+            gameWon={gameWon} // Cette prop est manquante ou undefined
           />
         </div>
 
         {/* Zone de message entre la grille et le clavier */}
         <div className="my-4 w-full flex justify-center">
           <GameControls
-            currentAttempt={gameLogic.currentAttempt}
+            currentAttempt={currentAttempt}
             wordLength={wordLength}
-            attemptResults={gameLogic.attemptResults}
-            targetWord={gameLogic.targetWord}
+            attemptResults={attemptResults}
+            targetWord={targetWord}
             maxAttempts={maxAttempts}
+            gameWon={gameWon}
+            gameOver={gameOver}
             onRestart={handleRestartGame}
             onHome={handleReturnHome}
+            onDictionary={handleViewDictionary}
           />
         </div>
 
         {/* Clavier virtuel */}
         <div className="flex justify-center w-full">
-          <Keyboard
-            handleInput={gameLogic.handleInput}
-            keyboardStatus={gameLogic.keyboardStatus}
-          />
+          <Keyboard handleInput={handleInput} keyboardStatus={keyboardStatus} />
         </div>
       </div>
 
