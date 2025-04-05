@@ -17,10 +17,10 @@ export async function findAccentedWord(word) {
   console.log(`Recherche d'accents pour: ${normalizedWord}`);
   
   try {
-    // URL dynamique selon l'environnement
-    const apiBaseUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:10000/api'
-      : 'https://wordle-app-gym5.onrender.com/api';
+    // Vérifier si on est en production plutôt que de se baser sur l'hostname
+    const apiBaseUrl = import.meta.env.PROD 
+      ? 'https://wordle-app-gym5.onrender.com/api'
+      : 'http://localhost:10000/api';
     
     const response = await fetch(`${apiBaseUrl}/words/accentuate/${normalizedWord}`);
     
