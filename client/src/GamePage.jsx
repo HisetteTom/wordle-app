@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { ArrowLeftIcon,BookOpenIcon } from "@heroicons/react/24/outline";
 
-// Composants
 import GameBoard from "./components/GameBoard";
 import Keyboard from "./components/Keyboard";
 import GameControls from "./components/GameControls";
@@ -12,15 +10,19 @@ import UserStats from "./components/UserStats";
 import ScoreAnimation from "./components/ScoreAnimation";
 import HintBox from "./components/Hintbox";
 import DictionaryPage from "./components/DictionaryPage";
+import WordNetworkBackground from "./components/WordNetworkBackground";
+import Header from "./components/Header";
 
-// Hooks
 import { useGameLogic } from "./hooks/useGameLogic";
 
-function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
+function GamePage({
+  wordLength = 5,
+  maxAttempts = 7,
+  onBack,
+  onOpenDictionary: parentOnOpenDictionary,
+}) {
   const { currentUser } = useAuth();
   const [hintsUsed, setHintsUsed] = useState(0);
-
-  // État des statistiques utilisateur
   const [userStats, setUserStats] = useState({
     displayName: currentUser?.displayName || "Invité",
     gamesPlayed: 0,
@@ -28,14 +30,10 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
     score: 0,
     isGuest: !currentUser,
   });
-
-  // État pour l'animation du score
   const [scoreAnimation, setScoreAnimation] = useState({
     visible: false,
     score: 0,
   });
-
-  // Nouvel état pour gérer l'affichage du dictionnaire
   const [showDictionary, setShowDictionary] = useState(false);
   const [dictionaryWord, setDictionaryWord] = useState("");
 
@@ -44,15 +42,8 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
     setShowDictionary(true);
   };
 
-  // Fonction pour revenir du dictionnaire au jeu
-  const handleReturnFromDictionary = () => {
-    setShowDictionary(false);
-  };
+  const handleReturnFromDictionary = () => setShowDictionary(false);
 
-  // Si on affiche le dictionnaire
-
-
-  // Définir handleStatsUpdated AVANT de l'utiliser dans useGameLogic
   const handleStatsUpdated = (statsUpdate) => {
     if (currentUser) {
       setUserStats((prev) => ({
@@ -62,17 +53,12 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
         score: prev.score + statsUpdate.score,
       }));
 
-      // Afficher l'animation de score uniquement si des points ont été gagnés
       if (statsUpdate.score > 0) {
-        setScoreAnimation({
-          visible: true,
-          score: statsUpdate.score,
-        });
+        setScoreAnimation({ visible: true, score: statsUpdate.score });
       }
     }
   };
 
-  // Utiliser le hook pour la logique du jeu
   const {
     attempts,
     currentAttempt,
@@ -92,38 +78,13 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
     hintsUsed
   );
 
-  // Gestionnaire pour masquer l'animation une fois terminée
   const handleAnimationComplete = () => {
-    setScoreAnimation({
-      visible: false,
-      score: 0,
-    });
+    setScoreAnimation({ visible: false, score: 0 });
   };
 
-  // Récupérer les stats depuis Firebase
   useEffect(() => {
     const fetchUserStats = async () => {
-      if (currentUser) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUserStats({
-              displayName:
-                currentUser.displayName || userData.displayName || "Invité",
-              gamesPlayed: userData.gamesPlayed || 0,
-              gamesWon: userData.gamesWon || 0,
-              score: userData.score || 0,
-              isGuest: false,
-            });
-          }
-        } catch (error) {
-          console.error(
-            "Erreur lors de la récupération des statistiques:",
-            error
-          );
-        }
-      } else {
+      if (!currentUser) {
         setUserStats({
           displayName: "Invité",
           gamesPlayed: 0,
@@ -131,6 +92,27 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
           score: 0,
           isGuest: true,
         });
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserStats({
+            displayName:
+              currentUser.displayName || userData.displayName || "Invité",
+            gamesPlayed: userData.gamesPlayed || 0,
+            gamesWon: userData.gamesWon || 0,
+            score: userData.score || 0,
+            isGuest: false,
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Erreur lors de la récupération des statistiques:",
+          error
+        );
       }
     };
 
@@ -138,28 +120,23 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
   }, [currentUser]);
 
   const handleRestartGame = () => {
-    if (typeof resetGame === "function") {
+    if (resetGame) {
       resetGame();
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  // Fonction pour retourner à l'accueil avec animation
   const handleReturnHome = () => {
     const gameContainer = document.querySelector(".game-container");
-    if (gameContainer) {
+    if (gameContainer?.classList) {
       gameContainer.classList.add("fade-out");
-      setTimeout(() => {
-        onBack();
-      }, 300);
+      setTimeout(onBack, 300);
     } else {
       onBack();
     }
   };
+
+  const { isAuthenticated } = useAuth();
 
   if (showDictionary) {
     return (
@@ -171,25 +148,29 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-200 flex flex-col items-center pt-10 pb-20">
-      {/* Bouton retour en haut à gauche */}
-      <div className="absolute top-4 left-4">
-        <button
-          onClick={handleReturnHome}
-          className="flex items-center px-4 py-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-        >
-          <ArrowLeftIcon className="h-5 w-5 mr-1 text-gray-600" />
-          <span>Retour</span>
-        </button>
-      </div>
+    <div className="min-h-screen flex flex-col items-center py-12 px-4 relative overflow-hidden">
+      {/* Animation d'arrière-plan */}
+      <WordNetworkBackground gamePage={true} />
 
-      {/* Profil utilisateur en haut à droite */}
-      <UserStats userStats={userStats} />
+  
 
-      {/* Animation de score */}
+      {/* Header commun à toutes les pages */}
+      <Header
+        isAuthenticated={isAuthenticated}
+        currentUser={currentUser}
+        onNavigateHome={handleReturnHome}
+        onNavigateToDictionary={() =>
+          parentOnOpenDictionary && parentOnOpenDictionary()
+        }
+      />
+
+      {/* Espacement pour compenser le header fixe */}
+      <div className="h-16"></div>
+
+      {/* Animations et notifications */}
       {scoreAnimation.visible && (
         <div
-          className="fixed right-2 top-5 z-50"
+          className="fixed right-2 top-20 z-50"
           style={{ width: "180px", maxWidth: "180px" }}
         >
           <ScoreAnimation
@@ -199,70 +180,80 @@ function GamePage({ wordLength = 5, maxAttempts = 7, onBack }) {
         </div>
       )}
 
-      {/* Message d'erreur flottant */}
       {errorMessage && (
         <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
           {errorMessage}
         </div>
       )}
 
-      {/* Utilisation d'indice */}
-      <HintBox
-        key={targetWord || "loading"} // Forcer la recréation quand le mot change
-        targetWord={targetWord}
-        onHintUsed={(hintCount) => {
-          setHintsUsed(hintCount);
-        }}
-      />
+      {/* Contenu principal */}
+      <div className="max-w-6xl w-full mx-auto flex flex-col md:flex-row gap-6 z-10">
+        
 
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 animate-fadeIn">
-        WORDLE ({wordLength} lettres)
-      </h1>
+        {/* Colonne principale - Jeu */}
+        <div className="flex-1">
+        <div className="w-full backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-indigo-100/40 mb-8">            
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text text-center mb-6">
+              WORDLE ({wordLength} lettres)
+            </h1>
 
-      {/* Grille de jeu */}
-      <div className="game-container transition-opacity duration-300 flex flex-col items-center w-full">
-        <div className="flex justify-center w-full">
-          <GameBoard
-            attempts={attempts}
-            currentAttempt={currentAttempt}
-            attemptResults={attemptResults}
-            wordLength={wordLength}
-            gameWon={gameWon} // Cette prop est manquante ou undefined
-          />
+            
+            <div className="game-container transition-opacity duration-300 flex flex-col items-center w-full">
+              {/* Le reste du contenu du jeu reste inchangé */}
+              <div className="flex justify-center w-full mb-6">
+                <GameBoard
+                  attempts={attempts}
+                  currentAttempt={currentAttempt}
+                  attemptResults={attemptResults}
+                  wordLength={wordLength}
+                  gameWon={gameWon}
+                />
+              </div>
+
+              <div className="my-4 w-full flex justify-center">
+                <GameControls
+                  currentAttempt={currentAttempt}
+                  wordLength={wordLength}
+                  attemptResults={attemptResults}
+                  targetWord={targetWord}
+                  maxAttempts={maxAttempts}
+                  gameWon={gameWon}
+                  gameOver={gameOver}
+                  onRestart={handleRestartGame}
+                  onHome={handleReturnHome}
+                  onDictionary={handleViewDictionary}
+                />
+              </div>
+
+              <div className="flex justify-center w-full">
+                <Keyboard
+                  handleInput={handleInput}
+                  keyboardStatus={keyboardStatus}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 text-center text-gray-600 max-w-md mx-auto border-t border-gray-100 pt-4">
+              <p>
+                Utilisez votre clavier ou cliquez sur les touches ci-dessus pour
+                deviner le mot.
+              </p>
+              <p className="mt-2">
+                <strong>ENTER</strong> pour soumettre, <strong>←</strong> pour
+                effacer.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Zone de message entre la grille et le clavier */}
-        <div className="my-4 w-full flex justify-center">
-          <GameControls
-            currentAttempt={currentAttempt}
-            wordLength={wordLength}
-            attemptResults={attemptResults}
+        <div className="fixed left-4 top-1/3 z-40 hidden xl:block">
+          <HintBox
+            key={`fixed-${targetWord || "loading"}`}
             targetWord={targetWord}
-            maxAttempts={maxAttempts}
-            gameWon={gameWon}
-            gameOver={gameOver}
-            onRestart={handleRestartGame}
-            onHome={handleReturnHome}
-            onDictionary={handleViewDictionary}
+            onHintUsed={setHintsUsed}
+            position="fixed-left"
           />
         </div>
-
-        {/* Clavier virtuel */}
-        <div className="flex justify-center w-full">
-          <Keyboard handleInput={handleInput} keyboardStatus={keyboardStatus} />
-        </div>
-      </div>
-
-      {/* Instructions en bas */}
-      <div className="mt-4 text-center text-gray-600 max-w-md">
-        <p>
-          Utilisez votre clavier ou cliquez sur les touches ci-dessus pour
-          deviner le mot.
-        </p>
-        <p className="mt-2">
-          <strong>ENTER</strong> pour soumettre, <strong>←</strong> pour
-          effacer.
-        </p>
       </div>
     </div>
   );

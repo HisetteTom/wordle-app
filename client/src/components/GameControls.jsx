@@ -53,7 +53,7 @@ function GameControls({
 
       {/* Contrôles de fin de partie */}
       {(gameOver || gameWon) && (
-        <div className="flex flex-col items-center gap-4 p-4 bg-white rounded-lg shadow-md">
+        <div className="flex flex-col items-center gap-4 p-4 bg-white/85 backdrop-blur-sm rounded-lg shadow-md">
           <p className="text-lg font-bold text-center mb-2">
             {gameWon
               ? `Bravo ! Vous avez trouvé le mot en ${
@@ -65,7 +65,7 @@ function GameControls({
           <div className="flex gap-3 mt-2">
             <button
               onClick={onRestart}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center"
+              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center shadow-md transition-all duration-300 hover:shadow-lg"
             >
               <ArrowPathIcon className="h-5 w-5 mr-1" />
               Nouvelle partie
@@ -73,7 +73,7 @@ function GameControls({
 
             <button
               onClick={onHome}
-              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded flex items-center"
+              className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center shadow-md transition-all duration-300 hover:shadow-lg"
             >
               <HomeIcon className="h-5 w-5 mr-1" />
               Accueil
@@ -84,7 +84,7 @@ function GameControls({
           <button
             onClick={handleDictionaryClick}
             disabled={isLoading}
-            className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded flex items-center"
+            className="mt-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-bold py-2 px-4 rounded-lg flex items-center shadow-md transition-all duration-300 hover:shadow-lg"
           >
             {isLoading ? (
               <>

@@ -1,36 +1,29 @@
 import { wordleService } from './services/api';
 
-
-
-
-// Disposition du clavier
 export const keyboardRows = [
   ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"],
   ["Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"],
   ["ENTER", "W", "X", "C", "V", "B", "N", "BACK"]
 ];
 
-// Fonction pour vérifier une tentative
 export const checkAttempt = (attempt, targetWord) => {
   const wordLength = targetWord.length;
   const result = Array(wordLength).fill('absent');
   const targetLetters = targetWord.split('');
   
-  // Vérifier d'abord les lettres correctes
   for (let i = 0; i < wordLength; i++) {
     if (attempt[i] === targetLetters[i]) {
       result[i] = 'correct';
-      targetLetters[i] = null; // Marquer comme utilisée
+      targetLetters[i] = null;
     }
   }
   
-  // Ensuite vérifier les lettres présentes mais mal placées
   for (let i = 0; i < wordLength; i++) {
     if (result[i] !== 'correct') {
       const letterIndex = targetLetters.indexOf(attempt[i]);
       if (letterIndex !== -1) {
         result[i] = 'present';
-        targetLetters[letterIndex] = null; // Marquer comme utilisée
+        targetLetters[letterIndex] = null;
       }
     }
   }
@@ -38,7 +31,6 @@ export const checkAttempt = (attempt, targetWord) => {
   return result;
 };
 
-// Fonction pour mettre à jour le statut du clavier
 export const updateKeyboardStatus = (attempt, result, keyboardStatus, wordLength) => {
   const newStatus = { ...keyboardStatus };
   
@@ -46,10 +38,7 @@ export const updateKeyboardStatus = (attempt, result, keyboardStatus, wordLength
     const letter = attempt[i];
     const status = result[i];
     
-    // Ne pas modifier si déjà marqué comme correct
     if (newStatus[letter] === 'correct') continue;
-    
-    // Ne pas dégrader une lettre de "present" à "absent"
     if (newStatus[letter] === 'present' && status === 'absent') continue;
     
     newStatus[letter] = status;
@@ -57,8 +46,6 @@ export const updateKeyboardStatus = (attempt, result, keyboardStatus, wordLength
   
   return newStatus;
 };
-
-
 
 export const getRandomWord = wordleService.getRandomWord;
 export const isValidWord = wordleService.isValidWord;

@@ -1,4 +1,3 @@
-// server/routes/words.js
 const express = require('express');
 const router = express.Router();
 const wordService = require('../services/wordService');
@@ -43,6 +42,25 @@ router.get('/available-lengths', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la récupération des longueurs disponibles:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour trouver un mot avec ses accents
+router.get('/accentuate/:word', async (req, res) => {
+  const word = req.params.word.toLowerCase();
+  
+  try {
+    // Utiliser le service de mots pour trouver la version accentuée
+    const accentedWord = await wordService.findAccentedWord(word);
+    
+    if (accentedWord) {
+      return res.json({ word: accentedWord });
+    }
+    
+    res.status(404).json({ error: 'Mot non trouvé' });
+  } catch (error) {
+    console.error('Erreur lors de la recherche du mot accentué:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

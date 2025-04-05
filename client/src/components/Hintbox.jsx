@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { LightBulbIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
-const HintBox = ({ targetWord, onHintUsed }) => {
+const HintBox = ({ targetWord, onHintUsed, position = "inline" }) => {
   const [hintsRevealed, setHintsRevealed] = useState([false, false, false]);
   const [hints, setHints] = useState(["", "", ""]);
   const [hintUsed, setHintUsed] = useState(false);
@@ -137,9 +137,16 @@ const HintBox = ({ targetWord, onHintUsed }) => {
     }
   };
 
+  // Déterminez la classe de conteneur en fonction de la position demandée
+  const containerClass = position === "fixed-left" 
+    ? "fixed left-4 top-1/3 z-40 max-w-xs" 
+    : position === "sidebar" 
+      ? "w-full h-full" 
+      : "w-full";
+
   return (
-    <div className="fixed left-4 top-1/3 z-40">
-      <div className="bg-white rounded-lg shadow-lg p-4 w-72 border-l-4 border-green-500 animate-fadeIn">
+    <div className={containerClass}>
+      <div className="bg-white/80 backdrop-blur-sm p-4 rounded-lg shadow-lg border-l-4 border-green-500 animate-fadeIn">
         <div className="flex justify-between items-center mb-3">
           <h3 className="font-bold text-lg text-green-700 flex items-center">
             <LightBulbIcon className="h-5 w-5 mr-2" />
@@ -159,8 +166,8 @@ const HintBox = ({ targetWord, onHintUsed }) => {
                   disabled={hintsRevealed[index]}
                   className={`text-sm px-2 py-1 rounded flex items-center ${
                     hintsRevealed[index] 
-                      ? 'bg-gray-100 text-gray-500 cursor-default' 
-                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                      ? 'bg-gray-100/80 text-gray-500 cursor-default' 
+                      : 'bg-green-100/80 text-green-700 hover:bg-green-200/80'
                   }`}
                 >
                   {hintsRevealed[index] ? (
@@ -187,6 +194,6 @@ const HintBox = ({ targetWord, onHintUsed }) => {
       </div>
     </div>
   );
-};
+}
 
 export default HintBox;

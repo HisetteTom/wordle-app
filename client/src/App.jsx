@@ -6,79 +6,47 @@ import { AuthProvider, useAuth } from "./AuthContext";
 import { logoutUser, db } from "./firebase";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import {
-  ArrowRightOnRectangleIcon,
-  UserIcon,
   TrophyIcon,
-  BookOpenIcon, // Ajout de l'icône pour le dictionnaire
+  SparklesIcon,
+  CheckCircleIcon,
+  AcademicCapIcon,
+  LightBulbIcon,
 } from "@heroicons/react/24/outline";
+import Header from "./components/Header";
+import WordNetworkBackground from "./components/WordNetworkBackground";
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedLength, setSelectedLength] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const wordleLengths = [4, 5, 6, 7, 8, 9];
   const [leaderboard, setLeaderboard] = useState([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
+  const wordleLengths = [4, 5, 6, 7, 8, 9];
 
   const { currentUser, isAuthenticated } = useAuth();
 
-  // Charger le classement depuis Firestore
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
         setIsLoadingLeaderboard(true);
-        console.log("Chargement du classement...");
-        
-        // Créer une requête pour récupérer tous les utilisateurs (pas seulement ceux avec un score)
         const leaderboardQuery = query(
           collection(db, "users"),
           orderBy("score", "desc"),
           limit(10)
         );
-        
+
         const querySnapshot = await getDocs(leaderboardQuery);
-        console.log(`Nombre de documents récupérés: ${querySnapshot.size}`);
-        
-        const leaderboardData = [];
-        
-        querySnapshot.forEach((doc) => {
+        const leaderboardData = querySnapshot.docs.map((doc) => {
           const userData = doc.data();
-          console.log(`Utilisateur: ${userData.displayName || "Sans nom"}, Score: ${userData.score || 0}`);
-          
-          leaderboardData.push({
+          return {
             id: doc.id,
             displayName: userData.displayName || "Utilisateur",
             score: userData.score || 0,
-            isCurrentUser: currentUser ? doc.id === currentUser.uid : false
-          });
+            isCurrentUser: currentUser ? doc.id === currentUser.uid : false,
+          };
         });
-        
-        // Si aucun utilisateur n'est trouvé avec un score, essayons d'afficher au moins ceux qui existent
-        if (leaderboardData.length === 0) {
-          console.log("Aucun utilisateur avec score trouvé, on récupère tous les utilisateurs");
-          const allUsersQuery = query(
-            collection(db, "users"),
-            limit(10)
-          );
-          
-          const allUsersSnapshot = await getDocs(allUsersQuery);
-          console.log(`Nombre d'utilisateurs (sans tri par score): ${allUsersSnapshot.size}`);
-          
-          allUsersSnapshot.forEach((doc) => {
-            const userData = doc.data();
-            console.log(`Utilisateur (sans tri): ${userData.displayName || "Sans nom"}, Score: ${userData.score || 0}`);
-            
-            leaderboardData.push({
-              id: doc.id,
-              displayName: userData.displayName || "Utilisateur",
-              score: userData.score || 0,
-              isCurrentUser: currentUser ? doc.id === currentUser.uid : false
-            });
-          });
-        }
-        
+
         setLeaderboard(leaderboardData);
-        console.log(`Classement final: ${leaderboardData.length} joueurs`);
       } catch (error) {
         console.error("Erreur lors de la récupération du classement:", error);
       } finally {
@@ -87,10 +55,9 @@ function AppContent() {
     };
 
     fetchLeaderboard();
-  }, [currentUser]); // Recharger quand l'utilisateur change
+  }, [currentUser]);
 
   const handleButtonClick = (length) => {
-    console.log(`${length} lettres choisi`);
     setSelectedLength(length);
     setCurrentPage("game");
   };
@@ -119,173 +86,244 @@ function AppContent() {
     setCurrentPage("game");
   };
 
+  // Si currentPage === "game" && selectedLength
   if (currentPage === "game" && selectedLength) {
     return (
-      <GamePage 
-        wordLength={selectedLength} 
+      <GamePage
+        wordLength={selectedLength}
         onBack={handleBackToHome}
-        onOpenDictionary={handleNavigateToDictionary} // Passer la fonction de navigation
+        onOpenDictionary={handleNavigateToDictionary}
       />
     );
   }
 
+  // Si currentPage === "dictionary"
   if (currentPage === "dictionary") {
     return <DictionaryPage onBack={handleBackToGame} />;
   }
 
-  // Sinon, afficher la page d'accueil
+  // Affichage de la page d'accueil redesignée
   return (
-    <div className="min-h-screen bg-gray-200 flex flex-col items-center justify-center drop-shadow-lg relative">
-      {/* Bouton de connexion/déconnexion en haut à droite */}
-      <div className="absolute top-4 right-4">
-        {isAuthenticated ? (
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-700 font-medium">
-              {currentUser?.displayName || currentUser?.email}
-            </span>
-            <button
-              onClick={handleLogoutClick}
-              className="flex items-center px-4 py-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-            >
-              <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2 text-gray-600" />
-              <span className="font-medium text-gray-700">Deconnexion</span>
-            </button>
+    <div className="min-h-screen flex flex-col items-center py-12 px-4 relative overflow-hidden">
+      {/* Animation d'arrière-plan */}
+      <WordNetworkBackground />
+      
+      
+      {/* Header commun à toutes les pages */}
+      <Header
+        isAuthenticated={isAuthenticated}
+        currentUser={currentUser}
+        onLogin={handleLoginClick}
+        onLogout={handleLogoutClick}
+        onNavigateHome={handleBackToHome}
+        onNavigateToDictionary={handleNavigateToDictionary}
+      />
+      
+      {/* Espacement pour compenser le header fixe */}
+      <div className="h-16"></div>
+      
+      {/* Conteneur principal avec nouveau style */}
+      <div className="max-w-5xl w-full mx-auto flex flex-col md:flex-row gap-8 items-stretch z-10">
+        {/* Carte principale */}
+        <div className="flex-1 bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/40">
+          <div className="flex items-center justify-center mb-6">
+            <SparklesIcon className="h-8 w-8 text-amber-500 mr-3" />
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text">
+              WORDLE
+            </h1>
+            <SparklesIcon className="h-8 w-8 text-amber-500 ml-3" />
           </div>
-        ) : (
-          <button
-            onClick={handleLoginClick}
-            className="flex items-center px-4 py-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-          >
-            <UserIcon className="h-5 w-5 mr-2 text-gray-600" />
-            <span className="font-medium text-gray-700">Se connecter</span>
-          </button>
-        )}
-      </div>
 
-      {/* Bouton du dictionnaire en haut à gauche */}
-      <div className="absolute top-4 left-4">
-        <button
-          onClick={handleNavigateToDictionary}
-          className="flex items-center px-4 py-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-        >
-          <BookOpenIcon className="h-5 w-5 mr-2 text-blue-600" />
-          <span className="font-medium text-blue-700">Dictionnaire</span>
-        </button>
-      </div>
+          <div className="h-1 w-48 bg-gradient-to-r from-indigo-300 to-purple-300 mx-auto mb-8 rounded-full"></div>
 
-      {/* Carte principale centrée */}
-      <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-4xl font-bold text-center text-gray-800 mb-2">
-          WORDLE
-        </h1>
-        <div className="h-1 w-40 bg-gray-400 mx-auto mb-8"></div>
-        
-        <p className="text-gray-700 text-center mb-10">
-          Devinez le mot en un minimum d'essais. Choisissez la longueur du mot
-          pour commencer.
-        </p>
+          <p className="text-gray-700 text-center mb-8 text-lg">
+            Devinez le mot en un minimum d'essais. Choisissez la longueur du mot
+            pour commencer votre aventure lexicale.
+          </p>
 
-        <div className="grid grid-cols-2 gap-4 mb-8" id="length-buttons">
-          {wordleLengths.map((length) => (
-            <button
-              key={length}
-              className="py-3 px-4 rounded-md text-lg font-medium transition-colors duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={() => handleButtonClick(length)}
-            >
-              {length} lettres
-            </button>
-          ))}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+            {wordleLengths.map((length) => (
+              <button
+                key={length}
+                onClick={() => handleButtonClick(length)}
+                className="py-4 px-6 rounded-xl text-lg font-medium transition-all duration-300 bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-md hover:shadow-lg hover:scale-105 hover:border-indigo-300 flex flex-col items-center justify-center"
+              >
+                <span className="text-2xl font-bold text-indigo-600">
+                  {length}
+                </span>
+                <span className="text-gray-600">lettres</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="border-t border-indigo-100 pt-6 px-3">
+            <div className="flex items-center justify-center mb-3">
+              <AcademicCapIcon className="h-6 w-6 text-indigo-500 mr-2" />
+              <h2 className="text-xl font-bold text-indigo-700">
+                Comment jouer
+              </h2>
+            </div>
+
+            <div className="bg-indigo-50 p-5 rounded-xl">
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Devinez le mot en 7 essais ou moins.</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Les lettres correctes à la bonne position deviendront
+                    vertes.
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Les lettres correctes à la mauvaise position seront jaunes.
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <LightBulbIcon className="h-5 w-5 text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Des indices sont disponibles pour vous aider, mais ils
+                    réduisent votre score.
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
 
-        <div className="border-t border-gray-200 pt-6">
-          <h2 className="text-gray-700 font-semibold mb-2 text-center">
-            Comment jouer
-          </h2>
-          <p className="text-sm text-gray-500 text-center">
-            Devinez le mot en 7 essais. Après chaque essai, les couleurs des
-            lettres changeront pour montrer à quel point votre proposition était
-            proche du mot.
-          </p>  
-        </div>
-      </div>
+        {/* Tableau des meilleurs scores redesigné */}
+        <div className="md:w-80 w-full bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-white/40">
+          <div className="flex items-center justify-center mb-4">
+            <TrophyIcon className="h-6 w-6 text-amber-500 mr-2" />
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-transparent bg-clip-text">
+              Classement
+            </h2>
+          </div>
 
-      {/* Tableau des meilleurs scores */}
-      <div className="absolute right-8 top-1/2 transform -translate-y-1/2 max-w-xs w-72 p-6 bg-white rounded-lg shadow-md">
-        <div className="flex items-center justify-center mb-2">
-          <TrophyIcon className="h-6 w-6 text-yellow-500 mr-2" />
-          <h2 className="text-2xl font-bold text-center text-gray-800">
-            Classement
-          </h2>
-        </div>
-        <div className="h-1 w-32 bg-gray-400 mx-auto mb-6"></div>
-        
-        {isLoadingLeaderboard ? (
-          <div className="text-center py-4">
-            <svg className="animate-spin h-8 w-8 text-gray-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p className="mt-2 text-gray-600">Chargement...</p>
-          </div>
-        ) : leaderboard.length === 0 ? (
-          <div className="text-center text-gray-500 italic">
-            Aucun score disponible pour le moment.
-          </div>
-        ) : (
-          <div className="overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joueur</th>
-                  <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {leaderboard.map((player, index) => (
-                  <tr 
-                    key={player.id}
-                    className={`
-                      ${player.isCurrentUser ? 'bg-black-800' : ''}
-                      hover:bg-gray-50 transition-colors
-                    `}
-                  >
-                    <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {index + 1}
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-700">
-                      <div className={`${player.isCurrentUser ? 'font-bold text-black' : ''}`}>
-                        {player.displayName}
-                        {player.isCurrentUser && (
-                          <span className="ml-2 text-xs font-medium text-black">(vous)</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap text-sm text-right font-medium">
-                      <span className={`${player.isCurrentUser ? 'font-bold text-black' : 'text-gray-900'}`}>
-                        {player.score}
-                      </span>
-                    </td>
+          <div className="h-1 w-32 bg-gradient-to-r from-amber-300 to-yellow-300 mx-auto mb-6 rounded-full"></div>
+
+          {isLoadingLeaderboard ? (
+            <div className="text-center py-10">
+              <div className="inline-block animate-spin h-10 w-10 border-4 border-indigo-300 border-t-indigo-600 rounded-full"></div>
+              <p className="mt-3 text-gray-600">Chargement...</p>
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div className="text-center py-10 px-4">
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <p className="text-amber-700">
+                  Aucun score disponible pour le moment.
+                </p>
+                <p className="text-sm text-amber-600 mt-2">
+                  Soyez le premier à jouer !
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-gray-100">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gradient-to-r from-indigo-50 to-purple-50">
+                  <tr>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-indigo-600 uppercase tracking-wider">
+                      #
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-indigo-600 uppercase tracking-wider">
+                      Joueur
+                    </th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-indigo-600 uppercase tracking-wider">
+                      Score
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {leaderboard.map((player, index) => (
+                    <tr
+                      key={player.id}
+                      className={`
+                      ${
+                        player.isCurrentUser
+                          ? "bg-indigo-50"
+                          : index % 2 === 0
+                          ? "bg-white"
+                          : "bg-gray-50"
+                      }
+                      transition-colors hover:bg-indigo-50/50
+                    `}
+                    >
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-center">
+                        <div
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full 
+                        ${
+                          index < 3
+                            ? index === 0
+                              ? "bg-amber-100 text-amber-700"
+                              : index === 1
+                              ? "bg-gray-100 text-gray-700"
+                              : "bg-amber-50 text-amber-800"
+                            : "text-gray-700"
+                        }`}
+                        >
+                          {index + 1}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm">
+                        <div
+                          className={`${
+                            player.isCurrentUser
+                              ? "font-bold text-indigo-700"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {player.displayName}
+                          {player.isCurrentUser && (
+                            <span className="ml-2 text-xs font-medium px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full">
+                              vous
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-right font-bold">
+                        <span
+                          className={`${
+                            player.isCurrentUser
+                              ? "text-indigo-700"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {player.score}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
+          <div className="mt-5 pt-4 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-500">
+              Connectez-vous pour sauvegarder votre score et apparaître dans le
+              classement !
+            </p>
+          </div>
+        </div>
+      </div>
+      
       {/* Modal d'authentification */}
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 }
 
-function App() {
+const App = () => {
   return (
     <AuthProvider>
       <AppContent />
     </AuthProvider>
   );
-}
+};
 
 export default App;

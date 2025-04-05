@@ -7,35 +7,29 @@ function GameBoard({
   wordLength,
   gameWon,
 }) {
-  // Tableau de refs pour les lignes
   const rowRefs = useRef([]);
-
 
   // Configurer les refs pour les animations
   useEffect(() => {
     rowRefs.current = rowRefs.current.slice(0, attempts.length);
   }, [attempts.length]);
 
-  // Appliquer l'animation de victoire si nécessaire
-  // Dans l'effet pour l'animation de victoire
+  // Appliquer l'animation de victoire
   useEffect(() => {
     if (gameWon) {
-      const winningRow = rowRefs.current[currentAttempt]; // <-- Supprimé le -1
+      const winningRow = rowRefs.current[currentAttempt];
       if (winningRow) {
-        console.log(
-          "Appliquer l'animation de victoire à la ligne:",
-          currentAttempt
-        );
+        winningRow.classList.remove("victory-animation");
+        void winningRow.offsetWidth;
         winningRow.classList.add("victory-animation");
-      } else {
-        console.log("Pas trouvé la ligne pour l'animation:", currentAttempt);
-        console.log("Lignes disponibles:", rowRefs.current.length);
+        console.log("Animation de victoire appliquée à la ligne:", currentAttempt);
       }
     }
   }, [gameWon, currentAttempt]);
 
+  
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
       <div className="grid gap-2">
         {attempts.map((attempt, attemptIndex) => (
           <div

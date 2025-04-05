@@ -1,5 +1,3 @@
-import { diacriticsMap } from 'diacritics-map';
-
 /**
  * Fonction pour supprimer les accents d'une chaîne de caractères
  * @param {string} str - La chaîne à normaliser
@@ -10,28 +8,35 @@ export function removeAccents(str) {
 }
 
 /**
- * Cette fonction utilise l'API du dictionnaire pour trouver la forme accentuée d'un mot
+ * Cette fonction utilise l'API locale pour trouver la forme accentuée d'un mot
  * @param {string} word - Le mot sans accent
  * @returns {Promise<string>} - Une promesse qui résout au mot avec accents
  */
 export async function findAccentedWord(word) {
+  const normalizedWord = word.toLowerCase();
+  console.log(`Recherche d'accents pour: ${normalizedWord}`);
+  
   try {
-    // Appel à une API publique de dictionnaire français
-    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/fr/${word.toLowerCase()}`);
+    // URL dynamique selon l'environnement
+    const apiBaseUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:10000/api'
+      : 'https://wordle-app-gym5.onrender.com/api';
     
-    if (!response.ok) {
-      return word.toLowerCase(); // Par défaut, retourner le mot d'origine
+    const response = await fetch(`${apiBaseUrl}/words/accentuate/${normalizedWord}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.word) {
+        console.log(`Mot trouvé avec accents: ${data.word}`);
+        return data.word;
+      }
     }
     
-    const data = await response.json();
-    if (data && data.length > 0) {
-      // L'API renvoie le mot correctement orthographié avec ses accents
-      return data[0].word;
-    }
-    
-    return word.toLowerCase();
+    // Si l'API ne trouve rien, retourner le mot original
+    console.log(`Aucun accent trouvé pour ${normalizedWord}`);
+    return normalizedWord;
   } catch (error) {
     console.error("Erreur lors de la recherche du mot accentué:", error);
-    return word.toLowerCase();
+    return normalizedWord;
   }
 }

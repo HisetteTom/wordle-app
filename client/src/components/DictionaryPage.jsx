@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {
-  ArrowLeftIcon,
   BookOpenIcon,
   MagnifyingGlassIcon,
+  ArrowLeftIcon
 } from "@heroicons/react/24/outline";
 import { dictionaryService } from "../services/api";
 import { removeAccents } from "../utils/stringUtils";
+import Header from "./Header";
+import WordNetworkBackground from "./WordNetworkBackground";
+import { useAuth } from "../AuthContext";
 
 const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
@@ -13,7 +16,7 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [recentSearches, setRecentSearches] = useState([]);
-  const [availableWords, setAvailableWords] = useState([]);
+  const { currentUser, isAuthenticated } = useAuth();
 
   const searchWord = async (word) => {
     if (!word.trim()) return;
@@ -22,11 +25,8 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
     setError(null);
   
     try {
-      // Tentative 1: recherche directe du mot tel quel
-      console.log("Tentative 1: recherche directe de", word);
       const data = await dictionaryService.getDefinition(word);
-  
-      // Si trouvé, afficher la définition
+      
       const formattedDefinition = {
         word: data.word,
         category: data.category,
@@ -35,48 +35,13 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
   
       setDefinition(formattedDefinition);
       
-      // Ajouter aux recherches récentes
       if (!recentSearches.includes(word)) {
         const newSearches = [word, ...recentSearches.slice(0, 4)];
         setRecentSearches(newSearches);
         localStorage.setItem("wordleRecentSearches", JSON.stringify(newSearches));
       }
     } catch (error) {
-      console.error("Recherche directe échouée:", error);
-  
       try {
-        // Tentative 2: chercher parmi les mots disponibles un mot qui correspond après normalisation
-        console.log("Tentative 2: recherche par normalisation pour", word);
-        
-        // Si nous avons des mots disponibles dans le dictionnaire
-        if (availableWords && availableWords.length > 0) {
-          const normalizedSearchTerm = removeAccents(word.toLowerCase());
-          
-          // Chercher un mot dans le dictionnaire qui, une fois les accents retirés, correspond au terme recherché
-          const matchingWord = availableWords.find(dictWord => 
-            removeAccents(dictWord.toLowerCase()) === normalizedSearchTerm
-          );
-          
-          if (matchingWord) {
-            console.log("Mot correspondant trouvé:", matchingWord);
-            
-            // Rechercher la définition du mot avec accents trouvé
-            const data = await dictionaryService.getDefinition(matchingWord);
-            
-            setDefinition({
-              word: data.word,
-              category: data.category,
-              definitions: [data.definition],
-              original: word // Garder le mot original pour référence
-            });
-            
-            return; // Sortir de la fonction car recherche réussie
-          }
-        }
-        
-        // Si on n'a pas trouvé de correspondance dans la liste locale,
-        // essayer l'API spéciale pour les mots normalisés
-        console.log("Tentative 3: API spéciale pour normalisation");
         const normalizedWord = removeAccents(word.toLowerCase());
         const data = await dictionaryService.getDefinitionByNormalized(normalizedWord);
         
@@ -87,7 +52,6 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
           original: word
         });
       } catch (innerError) {
-        console.error("Toutes les tentatives ont échoué:", innerError);
         setError(`Le mot "${word}" n'a pas été trouvé dans notre dictionnaire.`);
         setDefinition(null);
       }
@@ -96,32 +60,12 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
     }
   };
 
-  // Ajoutez cet effet après les autres useEffect existants
   useEffect(() => {
-    // Recherche automatique si un terme initial est fourni
     if (initialSearchTerm) {
       searchWord(initialSearchTerm);
     }
-  }, [initialSearchTerm]); // Ce useEffect s'exécute uniquement lorsque initialSearchTerm change
+  }, [initialSearchTerm]);
 
-  // Charger les mots disponibles au démarrage
-  useEffect(() => {
-    const loadAvailableWords = async () => {
-      try {
-        const words = await dictionaryService.getAvailableWords();
-        setAvailableWords(words);
-      } catch (err) {
-        console.error("Erreur lors du chargement des mots disponibles:", err);
-      }
-    };
-
-    loadAvailableWords();
-  }, []);
-
-  // Fonction pour chercher un mot via notre API
-
-
-  // Charger l'historique de recherche au chargement de la page
   useEffect(() => {
     const savedSearches = localStorage.getItem("wordleRecentSearches");
     if (savedSearches) {
@@ -129,7 +73,6 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
     }
   }, []);
 
-  // Gérer le submit du formulaire de recherche
   const handleSubmit = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
@@ -138,126 +81,150 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col p-4 md:p-8">
-      {/* Bouton retour en haut à gauche */}
-      <div className="mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center px-4 py-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-        >
-          <ArrowLeftIcon className="h-5 w-5 mr-1 text-gray-600" />
-          <span>Retour au jeu</span>
-        </button>
-      </div>
-
-      {/* Titre de la page */}
-      <h1 className="text-3xl font-bold text-blue-800 mb-8 text-center flex items-center justify-center">
-        <BookOpenIcon className="h-8 w-8 mr-2" />
-        Dictionnaire Français
-      </h1>
-
-      {/* Formulaire de recherche */}
-      <div className="w-full max-w-xl mx-auto mb-8">
-        <form onSubmit={handleSubmit} className="flex">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Rechercher un mot..."
-            className="flex-grow py-2 px-4 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+    <div className="min-h-screen flex flex-col items-center py-12 px-4 relative overflow-hidden">
+      {/* Animation d'arrière-plan */}
+      <WordNetworkBackground />
+      
+      {/* Header commun à toutes les pages */}
+      <Header
+        isAuthenticated={isAuthenticated}
+        currentUser={currentUser}
+        onNavigateHome={onBack}
+        onNavigateToDictionary={() => {}}
+      />
+      
+      {/* Espacement pour compenser le header fixe */}
+      <div className="h-16"></div>
+      
+      {/* Contenu principal */}
+      <div className="max-w-5xl w-full mx-auto z-10">
+        <div className="flex items-center justify-between mb-6">
           <button
-            type="submit"
-            className="bg-blue-600 text-white py-2 px-4 rounded-r-lg hover:bg-blue-700 transition-colors flex items-center"
+            onClick={onBack}
+            className="flex items-center px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg border border-indigo-100 shadow-md hover:shadow-lg transition-all"
           >
-            <MagnifyingGlassIcon className="h-5 w-5 mr-1" />
-            <span>Rechercher</span>
+            <ArrowLeftIcon className="h-5 w-5 mr-2 text-indigo-600" />
+            <span className="text-indigo-700">Retour au jeu</span>
           </button>
-        </form>
 
-        {/* Recherches récentes */}
-        {recentSearches.length > 0 && (
-          <div className="mt-2">
-            <p className="text-sm text-gray-500">Recherches récentes:</p>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {recentSearches.map((term) => (
-                <button
-                  key={term}
-                  onClick={() => {
-                    setSearchTerm(term);
-                    searchWord(term);
-                  }}
-                  className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded transition-colors"
-                >
-                  {term}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text">
+            Dictionnaire
+          </h1>
+        </div>
 
-      {/* Résultats de recherche */}
-      <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
-        {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-          </div>
-        ) : error ? (
-          <div className="text-red-500 text-center py-6">
-            <p>{error}</p>
-            <p className="mt-2 text-sm">
-              Essayez un autre mot ou vérifiez l'orthographe
-            </p>
-          </div>
-        ) : definition ? (
-          <div className="animate-fadeIn">
-            {/* En-tête avec le mot recherché */}
-            <div className="border-b pb-4 mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {definition.word}
-              </h2>
-              {definition.category && (
-                <p className="text-gray-600 italic">{definition.category}</p>
-              )}
-            </div>
+        <div className="w-full backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-indigo-100/40 bg-white/80 mb-6">
+          <form onSubmit={handleSubmit} className="flex">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher un mot..."
+              className="flex-grow py-3 px-4 border border-indigo-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/90"
+            />
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 px-5 rounded-r-lg hover:from-indigo-600 hover:to-purple-600 transition-colors flex items-center shadow-md"
+            >
+              <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
+              <span>Rechercher</span>
+            </button>
+          </form>
 
-            {/* Définition principale */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Définition
-              </h3>
-              <ul className="list-disc pl-5 space-y-2">
-                {definition.definitions.map((def, index) => (
-                  <li key={index} className="text-gray-700">
-                    {def}
-                  </li>
+          {recentSearches.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm text-indigo-700 font-medium">Recherches récentes:</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {recentSearches.map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => {
+                      setSearchTerm(term);
+                      searchWord(term);
+                    }}
+                    className="text-sm bg-gradient-to-br from-indigo-50 to-white text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-100 hover:shadow-sm transition-all"
+                  >
+                    {term}
+                  </button>
                 ))}
-              </ul>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <BookOpenIcon className="h-12 w-12 mx-auto text-gray-400" />
-            <p className="mt-2">
-              Recherchez un mot pour afficher sa définition
-            </p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      <div className="w-full max-w-2xl mx-auto mt-6 text-center text-gray-400 text-xs">
-        <p>
-          Définitions fournies par{" "}
-          <a
-            href="https://fr.wiktionary.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-500 underline"
-          >
-            Wiktionary
-          </a>
-        </p>
+        <div className="w-full backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-indigo-100/40 bg-white/80">
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-300 border-t-indigo-600"></div>
+              <span className="ml-3 text-indigo-700">Recherche en cours...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                <p className="text-red-600">{error}</p>
+                <p className="mt-2 text-sm text-red-500">
+                  Essayez un autre mot ou vérifiez l'orthographe
+                </p>
+              </div>
+            </div>
+          ) : definition ? (
+            <div className="animate-fadeIn">
+              <div className="border-b border-indigo-100 pb-4 mb-6">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 text-transparent bg-clip-text">
+                  {definition.word}
+                </h2>
+                {definition.category && (
+                  <div className="flex items-center mt-2">
+                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-sm">
+                      {definition.category}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                  <BookOpenIcon className="h-5 w-5 mr-2 text-indigo-600" />
+                  Définition
+                </h3>
+                <div className="bg-indigo-50/50 rounded-lg p-4">
+                  <ul className="list-disc pl-5 space-y-3">
+                    {definition.definitions.map((def, index) => (
+                      <li key={index} className="text-gray-700">
+                        {def}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 px-4">
+              <div className="bg-indigo-50/50 p-6 rounded-lg border border-indigo-100">
+                <BookOpenIcon className="h-16 w-16 mx-auto text-indigo-400 mb-3" />
+                <p className="text-indigo-700 text-lg">
+                  Recherchez un mot pour afficher sa définition
+                </p>
+                <p className="mt-2 text-indigo-600/70 text-sm">
+                  Entrez un mot dans la barre de recherche ci-dessus
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="w-full mt-6 text-center text-indigo-500/70 text-xs">
+          <p className="bg-white/60 backdrop-blur-sm py-2 px-4 rounded-lg inline-block">
+            Définitions fournies par{" "}
+            <a
+              href="https://fr.wiktionary.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 hover:text-indigo-800 underline transition-colors"
+            >
+              Wiktionary
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

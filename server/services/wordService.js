@@ -122,6 +122,58 @@ const getAvailableLengths = () => {
   return discoverAvailableLengths();
 };
 
+
+const accentMap = new Map();
+
+/**
+ * Charge tous les dictionnaires et construit la map de correspondance des accents
+ */
+const buildAccentMap = async () => {
+  // Ne construire la map qu'une seule fois
+  if (accentMap.size > 0) return;
+
+  console.log("Construction de la map d'accents...");
+  const lengths = discoverAvailableLengths();
+  
+  for (const length of lengths) {
+    const dictionaryPath = path.join(__dirname, `../data/words_${length}.dic`);
+    
+    if (!fs.existsSync(dictionaryPath)) continue;
+    
+    // Lire le fichier dictionnaire
+    const fileContent = await fs.promises.readFile(dictionaryPath, 'utf8');
+    const words = fileContent.split('\n').map(line => line.trim())
+                 .filter(line => line && !line.startsWith('//'));
+    
+    for (const word of words) {
+      // Version normalisée (sans accent) en minuscules
+      const normalized = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      
+      // Stocker la correspondance (mot sans accent -> mot avec accent)
+      accentMap.set(normalized, word.toLowerCase());
+    }
+  }
+  
+  console.log(`Map d'accents construite avec ${accentMap.size} correspondances`);
+};
+
+/**
+ * Trouve la version accentuée d'un mot
+ * @param {string} word - Mot sans accent à rechercher
+ * @returns {Promise<string|null>} - Version accentuée du mot ou null
+ */
+async function findAccentedWord(word) {
+  // S'assurer que la map d'accents est construite
+  await buildAccentMap();
+  
+  // Normaliser le mot d'entrée
+  const normalizedInput = word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  
+  // Rechercher dans la map
+  const accentedVersion = accentMap.get(normalizedInput);
+  
+  return accentedVersion || null;
+}
 // Précharger les longueurs disponibles au démarrage
 const availableLengths = discoverAvailableLengths();
 console.log('Longueurs de mots disponibles:', availableLengths);
@@ -129,5 +181,6 @@ console.log('Longueurs de mots disponibles:', availableLengths);
 module.exports = {
   getRandomWord,
   isValidWord,
-  getAvailableLengths
+  getAvailableLengths,
+  findAccentedWord
 };
