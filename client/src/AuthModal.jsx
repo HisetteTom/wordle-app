@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { registerUser, loginUser } from "./firebase";
 
 function AuthModal({ onClose }) {
+  // États du formulaire
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,11 +12,13 @@ function AuthModal({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Pour éviter les fuites mémoire avec le portal
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
+  // Traitement du formulaire
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -29,7 +32,7 @@ function AuthModal({ onClose }) {
       if (result.error) {
         let errorMessage = "Une erreur s'est produite.";
 
-        // Messages d'erreur plus spécifiques
+        // Messages d'erreur personnalisés
         switch (result.error.code) {
           case "auth/email-already-in-use":
             errorMessage = "Cet email est déjà utilisé.";
@@ -52,8 +55,6 @@ function AuthModal({ onClose }) {
         setError(errorMessage);
         setLoading(false);
       } else {
-        // Connexion réussie, fermer la modal
-        console.log("Utilisateur connecte:", result.user);
         onClose();
       }
     } catch (err) {
@@ -63,26 +64,25 @@ function AuthModal({ onClose }) {
     }
   };
 
-  // Contenu de la modale
+  // Structure de la modale
   const modalContent = (
-    <div 
+    <div
       className="fixed inset-0 flex items-center justify-center z-[9999]"
       style={{
         backgroundColor: "rgba(0, 0, 0, 0.5)",
-        backdropFilter: "blur(5px)"
+        backdropFilter: "blur(5px)",
       }}
       onClick={(e) => {
-        // Fermer en cliquant sur arriere plan
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div 
-        className="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl" 
+      <div
+        className="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl"
         style={{
           position: "relative",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
           transform: "scale(1)",
-          animation: "fadeIn 0.3s ease-out"
+          animation: "fadeIn 0.3s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -97,6 +97,7 @@ function AuthModal({ onClose }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Champ nom seulement pour l'inscription */}
           {!isLogin && (
             <div>
               <label htmlFor="displayName" className="block text-gray-700 mb-2">
@@ -189,11 +190,11 @@ function AuthModal({ onClose }) {
     </div>
   );
 
-  // Utiliser ReactDOM.createPortal ppr mettre la fenetre sur le body
+  // Rendu via portal pour afficher au-dessus de tout
   return mounted ? ReactDOM.createPortal(modalContent, document.body) : null;
 }
 
-// Ajouter ces styles dans votre CSS global ou dans la balise head
+// Animation de la modale
 const globalStyles = `
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
@@ -201,7 +202,7 @@ const globalStyles = `
 }
 `;
 
-// Injecter les styles globaux
+// Injection des styles
 const injectGlobalStyles = () => {
   const styleElement = document.createElement("style");
   styleElement.textContent = globalStyles;
@@ -211,12 +212,12 @@ const injectGlobalStyles = () => {
   };
 };
 
-// Version finale du composant avec styles injectés
+// Composant final avec styles
 function EnhancedAuthModal(props) {
   useEffect(() => {
     return injectGlobalStyles();
   }, []);
-  
+
   return <AuthModal {...props} />;
 }
 

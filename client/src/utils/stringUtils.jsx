@@ -1,29 +1,24 @@
-/**
- * Fonction pour supprimer les accents d'une chaîne de caractères
- * @param {string} str - La chaîne à normaliser
- * @return {string} - La chaîne sans accents
- */
+//Fonction pour supprimer les accents d'une chaîne de caractères
+
 export function removeAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-/**
- * Cette fonction utilise l'API locale pour trouver la forme accentuée d'un mot
- * @param {string} word - Le mot sans accent
- * @returns {Promise<string>} - Une promesse qui résout au mot avec accents
- */
+//fonction utilise l'API locale pour trouver la forme accentuée d'un mot
 export async function findAccentedWord(word) {
   const normalizedWord = word.toLowerCase();
   console.log(`Recherche d'accents pour: ${normalizedWord}`);
-  
+
   try {
     // Vérifier si on est en production plutôt que de se baser sur l'hostname
-    const apiBaseUrl = import.meta.env.PROD 
-      ? 'https://wordle-app-gym5.onrender.com/api'
-      : 'http://localhost:10000/api';
-    
-    const response = await fetch(`${apiBaseUrl}/words/accentuate/${normalizedWord}`);
-    
+    const apiBaseUrl = import.meta.env.PROD
+      ? "https://wordle-app-gym5.onrender.com/api"
+      : "http://localhost:10000/api";
+
+    const response = await fetch(
+      `${apiBaseUrl}/words/accentuate/${normalizedWord}`
+    );
+
     if (response.ok) {
       const data = await response.json();
       if (data && data.word) {
@@ -31,7 +26,7 @@ export async function findAccentedWord(word) {
         return data.word;
       }
     }
-    
+
     // Si l'API ne trouve rien, retourner le mot original
     console.log(`Aucun accent trouvé pour ${normalizedWord}`);
     return normalizedWord;

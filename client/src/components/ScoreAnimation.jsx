@@ -10,22 +10,21 @@ const ScoreAnimation = ({ score, onAnimationComplete }) => {
     // Plus le score est élevé, plus il y a de particules (dans une limite raisonnable)
     const particleCount = Math.min(25, Math.max(12, score / 2));
     const newParticles = [];
-    
+
     for (let i = 0; i < particleCount; i++) {
       // Créer des particules avec des propriétés aléatoires pour plus de dynamisme
       newParticles.push({
         id: i,
-        x: Math.random() * 100,  // Position horizontale aléatoire
-        y: Math.random() * 100,  // Position verticale aléatoire
-        size: Math.random() * 8 + 4,  // Taille aléatoire entre 4 et 12px
-        duration: Math.random() * 1.5 + 1,  // Durée d'animation entre 1 et 2.5s
-        delay: Math.random() * 0.5,  // Délai de départ entre 0 et 0.5s
-        color: getRandomColor(),  // Couleur aléatoire
+        x: Math.random() * 100, // Position horizontale aléatoire
+        y: Math.random() * 100, // Position verticale aléatoire
+        size: Math.random() * 8 + 4, // Taille aléatoire entre 4 et 12px
+        duration: Math.random() * 1.5 + 1, // Durée d'animation entre 1 et 2.5s
+        delay: Math.random() * 0.5, // Délai de départ entre 0 et 0.5s
+        color: getRandomColor(), // Couleur aléatoire
       });
     }
-    
+
     setParticles(newParticles);
-    
   }, [score]);
 
   // Gérer les étapes de l'animation
@@ -33,28 +32,28 @@ const ScoreAnimation = ({ score, onAnimationComplete }) => {
     // Phase 1: Entrée
     const enteringTimer = setTimeout(() => {
       setAnimationState("visible");
-      
+
       // Phase 2: Visibilité maintenue
       const leavingTimer = setTimeout(() => {
         setAnimationState("leaving");
-        
+
         // Phase 3: Sortie et nettoyage
         const completeTimer = setTimeout(() => {
           if (onAnimationComplete) {
             onAnimationComplete();
           }
         }, 600);
-        
+
         return () => clearTimeout(completeTimer);
       }, 2200);
-      
+
       return () => clearTimeout(leavingTimer);
     }, 100);
-    
+
     return () => clearTimeout(enteringTimer);
   }, [onAnimationComplete]);
 
-  // Fonction utilitaire pour générer des couleurs aléatoires
+  // Fonction  pour générer des couleurs aléatoires
   function getRandomColor() {
     const colors = [
       "#FFD700", // Or
@@ -64,7 +63,7 @@ const ScoreAnimation = ({ score, onAnimationComplete }) => {
       "#FFFF00", // Jaune
       "#FAFAD2", // Jaune pâle
       "#FFFACD", // Citron
-      "#F0E68C"  // Kaki
+      "#F0E68C", // Kaki
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   }
@@ -73,7 +72,7 @@ const ScoreAnimation = ({ score, onAnimationComplete }) => {
   const animationClasses = {
     entering: "opacity-0 scale-90",
     visible: "opacity-100 scale-100",
-    leaving: "opacity-0 scale-110"
+    leaving: "opacity-0 scale-110",
   };
 
   // Calculer une taille de texte adaptée au score
@@ -85,7 +84,7 @@ const ScoreAnimation = ({ score, onAnimationComplete }) => {
 
   return (
     // Suppression des classes de positionnement fixed
-    <div 
+    <div
       ref={containerRef}
       className={`transition-all duration-500 ${animationClasses[animationState]}`}
       style={{ width: "auto", minWidth: "160px" }}
@@ -95,13 +94,17 @@ const ScoreAnimation = ({ score, onAnimationComplete }) => {
         {/* Texte du score avec une animation de pulsation */}
         <div className="flex items-center whitespace-nowrap">
           <span className="text-yellow-100 mr-1">+</span>
-          <span className={`${getFontSize()} font-extrabold animate-pulse text-white`}>{score}</span>
+          <span
+            className={`${getFontSize()} font-extrabold animate-pulse text-white`}
+          >
+            {score}
+          </span>
           <span className="ml-2 text-sm text-yellow-100">points</span>
         </div>
-        
+
         {/* Contour brillant */}
         <div className="absolute inset-0 rounded-lg border border-yellow-300 opacity-50"></div>
-        
+
         {/* Particules d'arrière-plan */}
         <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
           {particles.map((particle) => (

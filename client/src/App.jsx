@@ -1,3 +1,4 @@
+// Composant principal de l'application Wordle
 import React, { useState, useEffect } from "react";
 import GamePage from "./GamePage";
 import DictionaryPage from "./components/DictionaryPage";
@@ -16,15 +17,17 @@ import Header from "./components/Header";
 import WordNetworkBackground from "./components/WordNetworkBackground";
 
 function AppContent() {
+  // État de l'application
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedLength, setSelectedLength] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
-  const wordleLengths = [4, 5, 6, 7, 8, 9];
+  const wordleLengths = [4, 5, 6, 7, 8, 9]; // Longueurs de mot disponibles
 
   const { currentUser, isAuthenticated } = useAuth();
 
+  // Récupération du classement depuis Firestore
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
@@ -57,6 +60,7 @@ function AppContent() {
     fetchLeaderboard();
   }, [currentUser]);
 
+  // Handlers pour la navigation
   const handleButtonClick = (length) => {
     setSelectedLength(length);
     setCurrentPage("game");
@@ -86,7 +90,7 @@ function AppContent() {
     setCurrentPage("game");
   };
 
-  // Si currentPage === "game" && selectedLength
+  // Navigation conditionnelle vers la page de jeu
   if (currentPage === "game" && selectedLength) {
     return (
       <GamePage
@@ -97,19 +101,18 @@ function AppContent() {
     );
   }
 
-  // Si currentPage === "dictionary"
+  // Navigation conditionnelle vers le dictionnaire
   if (currentPage === "dictionary") {
     return <DictionaryPage onBack={handleBackToGame} />;
   }
 
-  // Affichage de la page d'accueil redesignée
+  // Page d'accueil
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-4 relative overflow-hidden">
       {/* Animation d'arrière-plan */}
       <WordNetworkBackground />
-      
-      
-      {/* Header commun à toutes les pages */}
+
+      {/* Header avec navigation */}
       <Header
         isAuthenticated={isAuthenticated}
         currentUser={currentUser}
@@ -118,13 +121,11 @@ function AppContent() {
         onNavigateHome={handleBackToHome}
         onNavigateToDictionary={handleNavigateToDictionary}
       />
-      
-      {/* Espacement pour compenser le header fixe */}
+
       <div className="h-16"></div>
-      
-      {/* Conteneur principal avec nouveau style */}
+
       <div className="max-w-5xl w-full mx-auto flex flex-col md:flex-row gap-8 items-stretch z-10">
-        {/* Carte principale */}
+        {/* Carte principale avec sélection du jeu */}
         <div className="flex-1 bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/40">
           <div className="flex items-center justify-center mb-6">
             <SparklesIcon className="h-8 w-8 text-amber-500 mr-3" />
@@ -141,6 +142,7 @@ function AppContent() {
             pour commencer votre aventure lexicale.
           </p>
 
+          {/* Boutons de sélection de la longueur du mot */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
             {wordleLengths.map((length) => (
               <button
@@ -156,6 +158,7 @@ function AppContent() {
             ))}
           </div>
 
+          {/* Instructions de jeu */}
           <div className="border-t border-indigo-100 pt-6 px-3">
             <div className="flex items-center justify-center mb-3">
               <AcademicCapIcon className="h-6 w-6 text-indigo-500 mr-2" />
@@ -195,7 +198,7 @@ function AppContent() {
           </div>
         </div>
 
-        {/* Tableau des meilleurs scores redesigné */}
+        {/* Tableau de classement */}
         <div className="md:w-80 w-full bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-white/40">
           <div className="flex items-center justify-center mb-4">
             <TrophyIcon className="h-6 w-6 text-amber-500 mr-2" />
@@ -206,6 +209,7 @@ function AppContent() {
 
           <div className="h-1 w-32 bg-gradient-to-r from-amber-300 to-yellow-300 mx-auto mb-6 rounded-full"></div>
 
+          {/* Affichage conditionnel du classement */}
           {isLoadingLeaderboard ? (
             <div className="text-center py-10">
               <div className="inline-block animate-spin h-10 w-10 border-4 border-indigo-300 border-t-indigo-600 rounded-full"></div>
@@ -311,13 +315,14 @@ function AppContent() {
           </div>
         </div>
       </div>
-      
+
       {/* Modal d'authentification */}
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 }
 
+// Wrapper avec contexte d'authentification
 const App = () => {
   return (
     <AuthProvider>

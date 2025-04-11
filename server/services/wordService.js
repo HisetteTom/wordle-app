@@ -1,186 +1,168 @@
-// server/services/wordService.js
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
+const fs = require("fs");
+const path = require("path");
+const readline = require("readline");
 
 // Cache pour stocker les mots par longueur
 let wordsByLength = {};
 let isLoaded = {};
 
-/**
- * Charge le dictionnaire d'une longueur spécifique en mémoire
- * @param {number} length - Longueur des mots à charger
- */
 const loadDictionaryByLength = async (length) => {
-  // Vérifier si cette longueur est déjà chargée
   if (isLoaded[length]) return;
-  
+
   const dictionaryPath = path.join(__dirname, `../data/words_${length}.dic`);
-  
-  // Vérifier si le fichier existe
+
   if (!fs.existsSync(dictionaryPath)) {
-    console.warn(`Dictionnaire pour les mots de ${length} lettres non trouvé: ${dictionaryPath}`);
+    console.warn(
+      `Dictionnaire pour les mots de ${length} lettres non trouvé: ${dictionaryPath}`
+    );
     wordsByLength[length] = [];
     isLoaded[length] = true;
     return;
   }
-  
-  console.log(`Chargement du dictionnaire pour les mots de ${length} lettres...`);
-  
-  // Initialiser la liste pour cette longueur
+
+  console.log(
+    `Chargement du dictionnaire pour les mots de ${length} lettres...`
+  );
+
   wordsByLength[length] = [];
-  
-  // Créer une interface de lecture de fichier
+
   const fileStream = fs.createReadStream(dictionaryPath);
   const rl = readline.createInterface({
     input: fileStream,
-    crlfDelay: Infinity
+    crlfDelay: Infinity,
   });
-  
-  // Lire le fichier ligne par ligne
+
   for await (const line of rl) {
     // Nettoyer le mot (enlever les accents, mettre en majuscules)
-    const word = line.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    
-    // Ignorer les lignes vides ou les commentaires
-    if (!word || word.startsWith('//')) continue;
-    
-    // Vérifier que le mot a la bonne longueur et ne contient que des lettres
+    const word = line
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // Enlever les accents
+
+    if (!word || word.startsWith("//")) continue;
+
     if (word.length === length && /^[A-Z]+$/.test(word)) {
       wordsByLength[length].push(word);
     }
   }
-  
+
   isLoaded[length] = true;
-  console.log(`Dictionnaire pour les mots de ${length} lettres chargé: ${wordsByLength[length].length} mots`);
+  console.log(
+    `Dictionnaire pour les mots de ${length} lettres chargé: ${wordsByLength[length].length} mots`
+  );
 };
 
-/**
- * Découvre les longueurs de mots disponibles
- */
 const discoverAvailableLengths = () => {
   const lengths = [];
-  const dataDir = path.join(__dirname, '../data');
-  
-  // Lire le contenu du répertoire data
+  const dataDir = path.join(__dirname, "../data");
+
   const files = fs.readdirSync(dataDir);
-  
+
   // Rechercher les fichiers qui correspondent au modèle words_X.dic
-  files.forEach(file => {
+  files.forEach((file) => {
     const match = file.match(/^words_(\d+)\.dic$/);
     if (match) {
       lengths.push(parseInt(match[1]));
     }
   });
-  
+
   return lengths.sort((a, b) => a - b);
 };
 
-/**
- * Obtient un mot aléatoire d'une longueur spécifique
- * @param {number} length - Longueur du mot souhaitée
- * @returns {string} Un mot aléatoire
- */
 const getRandomWord = async (length) => {
-  // S'assurer que le dictionnaire est chargé pour cette longueur
   if (!isLoaded[length]) {
     await loadDictionaryByLength(length);
   }
-  
-  // Valider la longueur demandée
+
   if (!wordsByLength[length] || wordsByLength[length].length === 0) {
-    throw new Error(`Aucun mot de ${length} lettres disponible dans le dictionnaire`);
+    throw new Error(
+      `Aucun mot de ${length} lettres disponible dans le dictionnaire`
+    );
   }
-  
-  // Choisir un mot aléatoire
+
   const randomIndex = Math.floor(Math.random() * wordsByLength[length].length);
   return wordsByLength[length][randomIndex];
 };
 
-/**
- * Vérifie si un mot existe dans le dictionnaire
- * @param {string} word - Le mot à vérifier
- * @returns {boolean} Vrai si le mot existe
- */
 const isValidWord = async (word) => {
-  const normalizedWord = word.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalizedWord = word
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
   const length = normalizedWord.length;
-  
-  // S'assurer que le dictionnaire est chargé pour cette longueur
+
   if (!isLoaded[length]) {
     await loadDictionaryByLength(length);
   }
-  
-  return wordsByLength[length] && wordsByLength[length].includes(normalizedWord);
+
+  return (
+    wordsByLength[length] && wordsByLength[length].includes(normalizedWord)
+  );
 };
 
-/**
- * Obtient la liste des longueurs de mots disponibles
- * @returns {number[]} Liste des longueurs disponibles
- */
 const getAvailableLengths = () => {
   return discoverAvailableLengths();
 };
 
-
+// Map pour stocker les mots accentués
 const accentMap = new Map();
 
-/**
- * Charge tous les dictionnaires et construit la map de correspondance des accents
- */
+// Fonction pour construire la map d'accents
 const buildAccentMap = async () => {
-  // Ne construire la map qu'une seule fois
   if (accentMap.size > 0) return;
 
   console.log("Construction de la map d'accents...");
   const lengths = discoverAvailableLengths();
-  
+
   for (const length of lengths) {
     const dictionaryPath = path.join(__dirname, `../data/words_${length}.dic`);
-    
-    if (!fs.existsSync(dictionaryPath)) continue;
-    
-    // Lire le fichier dictionnaire
-    const fileContent = await fs.promises.readFile(dictionaryPath, 'utf8');
-    const words = fileContent.split('\n').map(line => line.trim())
-                 .filter(line => line && !line.startsWith('//'));
-    
+
+    if (!fs.existsSync(dictionaryPath)) continue; // Ignore si le fichier n'existe pas
+
+    const fileContent = await fs.promises.readFile(dictionaryPath, "utf8");
+    const words = fileContent
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("//"));
+
     for (const word of words) {
       // Version normalisée (sans accent) en minuscules
-      const normalized = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      
+      const normalized = word
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
       // Stocker la correspondance (mot sans accent -> mot avec accent)
       accentMap.set(normalized, word.toLowerCase());
     }
   }
-  
-  console.log(`Map d'accents construite avec ${accentMap.size} correspondances`);
+
+  console.log(
+    `Map d'accents construite avec ${accentMap.size} correspondances`
+  );
 };
 
-/**
- * Trouve la version accentuée d'un mot
- * @param {string} word - Mot sans accent à rechercher
- * @returns {Promise<string|null>} - Version accentuée du mot ou null
- */
 async function findAccentedWord(word) {
-  // S'assurer que la map d'accents est construite
   await buildAccentMap();
-  
-  // Normaliser le mot d'entrée
-  const normalizedInput = word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  
-  // Rechercher dans la map
+
+  const normalizedInput = word
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
   const accentedVersion = accentMap.get(normalizedInput);
-  
+
   return accentedVersion || null;
 }
+
 // Précharger les longueurs disponibles au démarrage
 const availableLengths = discoverAvailableLengths();
-console.log('Longueurs de mots disponibles:', availableLengths);
+console.log("Longueurs de mots disponibles:", availableLengths);
 
 module.exports = {
   getRandomWord,
   isValidWord,
   getAvailableLengths,
-  findAccentedWord
+  findAccentedWord,
 };

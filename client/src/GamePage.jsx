@@ -21,6 +21,7 @@ function GamePage({
   onBack,
   onOpenDictionary: parentOnOpenDictionary,
 }) {
+  // États utilisateur et statistiques
   const { currentUser } = useAuth();
   const [hintsUsed, setHintsUsed] = useState(0);
   const [userStats, setUserStats] = useState({
@@ -34,9 +35,12 @@ function GamePage({
     visible: false,
     score: 0,
   });
+
+  // États pour le dictionnaire
   const [showDictionary, setShowDictionary] = useState(false);
   const [dictionaryWord, setDictionaryWord] = useState("");
 
+  // Gestion du dictionnaire
   const handleViewDictionary = (word) => {
     setDictionaryWord(word);
     setShowDictionary(true);
@@ -44,6 +48,7 @@ function GamePage({
 
   const handleReturnFromDictionary = () => setShowDictionary(false);
 
+  // Mise à jour des statistiques après une partie
   const handleStatsUpdated = (statsUpdate) => {
     if (currentUser) {
       setUserStats((prev) => ({
@@ -59,6 +64,7 @@ function GamePage({
     }
   };
 
+  // Récupération de la logique de jeu depuis un hook personnalisé
   const {
     attempts,
     currentAttempt,
@@ -82,6 +88,7 @@ function GamePage({
     setScoreAnimation({ visible: false, score: 0 });
   };
 
+  // Récupération des statistiques utilisateur depuis Firestore
   useEffect(() => {
     const fetchUserStats = async () => {
       if (!currentUser) {
@@ -119,6 +126,7 @@ function GamePage({
     fetchUserStats();
   }, [currentUser]);
 
+  // Fonctions de navigation
   const handleRestartGame = () => {
     if (resetGame) {
       resetGame();
@@ -138,6 +146,7 @@ function GamePage({
 
   const { isAuthenticated } = useAuth();
 
+  // Affichage du dictionnaire si demandé
   if (showDictionary) {
     return (
       <DictionaryPage
@@ -147,14 +156,11 @@ function GamePage({
     );
   }
 
+  // Rendu principal de la page de jeu
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-4 relative overflow-hidden">
-      {/* Animation d'arrière-plan */}
       <WordNetworkBackground gamePage={true} />
 
-  
-
-      {/* Header commun à toutes les pages */}
       <Header
         isAuthenticated={isAuthenticated}
         currentUser={currentUser}
@@ -164,10 +170,9 @@ function GamePage({
         }
       />
 
-      {/* Espacement pour compenser le header fixe */}
       <div className="h-16"></div>
 
-      {/* Animations et notifications */}
+      {/* Notification de score */}
       {scoreAnimation.visible && (
         <div
           className="fixed right-2 top-20 z-50"
@@ -180,26 +185,22 @@ function GamePage({
         </div>
       )}
 
+      {/* Message d'erreur */}
       {errorMessage && (
         <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
           {errorMessage}
         </div>
       )}
 
-      {/* Contenu principal */}
       <div className="max-w-6xl w-full mx-auto flex flex-col md:flex-row gap-6 z-10">
-        
-
-        {/* Colonne principale - Jeu */}
         <div className="flex-1">
-        <div className="w-full backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-indigo-100/40 mb-8">            
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text text-center mb-6">
+          <div className="w-full backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-indigo-100/40 mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text text-center mb-6">
               WORDLE ({wordLength} lettres)
             </h1>
 
-            
             <div className="game-container transition-opacity duration-300 flex flex-col items-center w-full">
-              {/* Le reste du contenu du jeu reste inchangé */}
+              {/* Grille de jeu */}
               <div className="flex justify-center w-full mb-6">
                 <GameBoard
                   attempts={attempts}
@@ -210,6 +211,7 @@ function GamePage({
                 />
               </div>
 
+              {/* Contrôles de jeu (fin de partie, nouveau jeu) */}
               <div className="my-4 w-full flex justify-center">
                 <GameControls
                   currentAttempt={currentAttempt}
@@ -225,6 +227,7 @@ function GamePage({
                 />
               </div>
 
+              {/* Clavier virtuel */}
               <div className="flex justify-center w-full">
                 <Keyboard
                   handleInput={handleInput}
@@ -246,6 +249,7 @@ function GamePage({
           </div>
         </div>
 
+        {/* Boîte d'indices*/}
         <div className="fixed left-4 top-1/3 z-40 hidden xl:block">
           <HintBox
             key={`fixed-${targetWord || "loading"}`}

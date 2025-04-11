@@ -6,6 +6,7 @@ function GameBoard({
   attemptResults,
   wordLength,
   gameWon,
+  preFilled,
 }) {
   const rowRefs = useRef([]);
 
@@ -22,12 +23,14 @@ function GameBoard({
         winningRow.classList.remove("victory-animation");
         void winningRow.offsetWidth;
         winningRow.classList.add("victory-animation");
-        console.log("Animation de victoire appliquée à la ligne:", currentAttempt);
+        console.log(
+          "Animation de victoire appliquée à la ligne:",
+          currentAttempt
+        );
       }
     }
   }, [gameWon, currentAttempt]);
 
-  
   return (
     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
       <div className="grid gap-2">
@@ -39,8 +42,15 @@ function GameBoard({
             data-attempt={attemptIndex}
           >
             {attempt.map((letter, letterIndex) => {
+              // Déterminer si c'est une lettre pré-remplie
+              const isPreFilled =
+                preFilled &&
+                preFilled[attemptIndex] &&
+                preFilled[attemptIndex][letterIndex];
+
               // Déterminer la couleur de l'arrière-plan
               let bgColor = "";
+              let textColor = "";
 
               if (
                 (attemptIndex < currentAttempt ||
@@ -49,24 +59,30 @@ function GameBoard({
               ) {
                 switch (attemptResults[attemptIndex][letterIndex]) {
                   case "correct":
-                    bgColor = "bg-green-500 text-white border-green-500";
+                    bgColor = "bg-green-500 border-green-500";
+                    textColor = isPreFilled ? "text-gray-200" : "text-white";
                     break;
                   case "present":
-                    bgColor = "bg-yellow-500 text-white border-yellow-500";
+                    bgColor = "bg-yellow-500 border-yellow-500";
+                    textColor = isPreFilled ? "text-gray-200" : "text-white";
                     break;
                   case "absent":
-                    bgColor = "bg-gray-500 text-white border-gray-500";
+                    bgColor = "bg-gray-500 border-gray-500";
+                    textColor = isPreFilled ? "text-gray-200" : "text-white";
                     break;
                   default:
                     bgColor = letter ? "bg-gray-100" : "";
+                    textColor = isPreFilled ? "text-gray-400" : "";
                 }
               } else {
+                // Pour toutes les cellules normales
                 bgColor = letter ? "bg-gray-100" : "";
+                textColor = isPreFilled ? "text-gray-400" : "";
               }
 
-
               // Animation pour les nouvelles lettres
-              const isNewLetter = attemptIndex === currentAttempt && letter;
+              const isNewLetter =
+                attemptIndex === currentAttempt && letter && !isPreFilled;
               const animationClass = isNewLetter ? "animate-pop" : "";
 
               return (
@@ -83,7 +99,10 @@ function GameBoard({
                     ${animationClass}
                   `}
                 >
-                  {letter}
+                  <span className={textColor}>{letter}</span>
+                  {isPreFilled && (
+                    <div className="absolute bottom-1 right-1 w-2 h-2 bg-gray-300 rounded-full"></div>
+                  )}
                 </div>
               );
             })}

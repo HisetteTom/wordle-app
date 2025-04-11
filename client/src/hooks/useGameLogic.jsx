@@ -11,6 +11,7 @@ import { useKeyboardInput } from "./useKeyboardInput";
 import { useGameStats } from "./useGameStats";
 import { useWordValidation } from "./useWordValidation";
 
+// Hook principal gérant toute la logique du jeu Wordle
 export function useGameLogic(
   wordLength = 5,
   maxAttempts = 6,
@@ -18,19 +19,30 @@ export function useGameLogic(
   onStatsUpdated,
   hintsUsed = 0
 ) {
+  // États pour suivre la progression du jeu
   const [attempts, setAttempts] = useState(
-    Array(maxAttempts).fill("").map(() => Array(wordLength).fill(""))
+    Array(maxAttempts)
+      .fill("")
+      .map(() => Array(wordLength).fill(""))
   );
   const [currentAttempt, setCurrentAttempt] = useState(0);
   const [currentPosition, setCurrentPosition] = useState(0);
   const [keyboardStatus, setKeyboardStatus] = useState({});
   const [targetWord, setTargetWord] = useState("");
   const [attemptResults, setAttemptResults] = useState(
-    Array(maxAttempts).fill(null).map(() => Array(wordLength).fill(null))
+    Array(maxAttempts)
+      .fill(null)
+      .map(() => Array(wordLength).fill(null))
   );
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  // Suivi des lettres pré-remplies
+  const [preFilled, setPreFilled] = useState(
+    Array(maxAttempts)
+      .fill(null)
+      .map(() => Array(wordLength).fill(false))
+  );
 
   const { updateUserStats } = useGameStats(
     currentUser,
@@ -46,15 +58,28 @@ export function useGameLogic(
     setErrorMessage
   );
 
+  // Réinitialise la ligne actuelle en préservant les lettres pré-remplies
   const resetCurrentRow = () => {
-    setAttempts(prev => {
+    setAttempts((prev) => {
       const newAttempts = [...prev];
-      newAttempts[currentAttempt] = Array(wordLength).fill("");
+
+      const newRow = Array(wordLength).fill("");
+
+      if (currentAttempt > 0) {
+        for (let i = 0; i < wordLength; i++) {
+          if (preFilled[currentAttempt][i]) {
+            newRow[i] = attempts[currentAttempt - 1][i];
+          }
+        }
+      }
+
+      newAttempts[currentAttempt] = newRow;
       return newAttempts;
     });
     setCurrentPosition(0);
   };
 
+  // Soumet l'essai actuel et vérifie le résultat
   const submitAttempt = async () => {
     const currentWordArray = attempts[currentAttempt];
     const currentWord = currentWordArray.join("");
@@ -74,85 +99,121 @@ export function useGameLogic(
     }
 
     const result = checkAttempt(currentWordArray, targetWord);
-    setAttemptResults(prev => {
+    setAttemptResults((prev) => {
       const newResults = [...prev];
       newResults[currentAttempt] = result;
       return newResults;
     });
 
-    setKeyboardStatus(prevStatus =>
+    setKeyboardStatus((prevStatus) =>
       updateKeyboardStatus(currentWordArray, result, prevStatus, wordLength)
     );
 
-
-    const isWin = result.every(r => r === "correct");
+    const isWin = result.every((r) => r === "correct");
 
     if (isWin) {
-      console.log("Victoire détectée!");
       setGameWon(true);
       setGameOver(true);
-      // Ajout d'un délai pour permettre à l'animation de se jouer
       setTimeout(() => {
         window.scrollTo({
           top: document.body.scrollHeight,
           behavior: "smooth",
         });
-        console.log("MAJ stats utilisateur");
         updateUserStats(true, currentAttempt + 1);
-      }, 500); 
+      }, 500);
     } else if (currentAttempt + 1 >= maxAttempts) {
       setGameOver(true);
       setTimeout(() => {
         updateUserStats(false, maxAttempts);
       }, 500);
     } else {
-      setCurrentAttempt(prev => prev + 1);
+      // Pré-remplit les lettres correctes pour la ligne suivante
+      const nextAttemptIndex = currentAttempt + 1;
+
+      setPreFilled((prev) => {
+        const newPreFilled = [...prev];
+        for (let i = 0; i < wordLength; i++) {
+          newPreFilled[nextAttemptIndex][i] = result[i] === "correct";
+        }
+        return newPreFilled;
+      });
+
+      setAttempts((prev) => {
+        const newAttempts = [...prev];
+        for (let i = 0; i < wordLength; i++) {
+          if (result[i] === "correct") {
+            newAttempts[nextAttemptIndex][i] = currentWordArray[i];
+          }
+        }
+        return newAttempts;
+      });
+
+      setCurrentAttempt((prev) => prev + 1);
       setCurrentPosition(0);
     }
 
     return true;
   };
 
+  // Gère les entrées clavier (lettres, effacement, validation)
   const handleInput = async (key) => {
     if (gameOver) return;
 
     if (key === "BACK" && currentPosition > 0) {
-      setAttempts(prev => {
+      setAttempts((prev) => {
         const newAttempts = [...prev];
         newAttempts[currentAttempt][currentPosition - 1] = "";
         return newAttempts;
       });
-      setCurrentPosition(prev => prev - 1);
+
+      setCurrentPosition(currentPosition - 1);
     } else if (key === "ENTER" && currentPosition === wordLength) {
       await submitAttempt();
-    } else if (currentPosition < wordLength && key !== "ENTER" && key !== "BACK") {
-      setAttempts(prev => {
+    } else if (
+      currentPosition < wordLength &&
+      key !== "ENTER" &&
+      key !== "BACK"
+    ) {
+      setAttempts((prev) => {
         const newAttempts = [...prev];
         newAttempts[currentAttempt][currentPosition] = key;
         return newAttempts;
       });
-      setCurrentPosition(prev => prev + 1);
+
+      setCurrentPosition(currentPosition + 1);
     }
   };
 
+  // Réinitialise le jeu avec un nouveau mot
   const resetGame = async () => {
     const newWord = await getRandomWord(wordLength);
     setTargetWord(newWord);
-    console.log("Mot a deviner:", newWord);
-    setAttempts(Array(maxAttempts).fill("").map(() => Array(wordLength).fill("")));
+    setAttempts(
+      Array(maxAttempts)
+        .fill("")
+        .map(() => Array(wordLength).fill(""))
+    );
     setCurrentAttempt(0);
     setCurrentPosition(0);
-    setAttemptResults(Array(maxAttempts).fill(null).map(() => Array(wordLength).fill(null)));
+    setAttemptResults(
+      Array(maxAttempts)
+        .fill(null)
+        .map(() => Array(wordLength).fill(null))
+    );
     setKeyboardStatus({});
     setGameOver(false);
     setGameWon(false);
     setErrorMessage("");
-    
-    // Ajouter behavior: 'smooth' et un délai
+    setPreFilled(
+      Array(maxAttempts)
+        .fill(null)
+        .map(() => Array(wordLength).fill(false))
+    );
+
     setTimeout(() => {
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }, 100);
   };
@@ -165,18 +226,20 @@ export function useGameLogic(
     setAttempts,
     currentAttempt,
     setCurrentPosition,
-    handleInput
+    handleInput,
+    preFilled
   );
 
+  // Initialise le jeu avec un nouveau mot aléatoire
   useEffect(() => {
     const initGame = async () => {
       const newWord = await getRandomWord(wordLength);
       setTargetWord(newWord);
-      console.log("Mot a deviner:", newWord);
     };
     initGame();
   }, [wordLength, maxAttempts]);
 
+  // Configuration des écouteurs d'événements clavier
   useEffect(() => {
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
@@ -194,5 +257,6 @@ export function useGameLogic(
     handleInput,
     resetGame,
     errorMessage,
+    preFilled,
   };
 }

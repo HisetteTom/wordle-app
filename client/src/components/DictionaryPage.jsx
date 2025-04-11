@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   BookOpenIcon,
   MagnifyingGlassIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import { dictionaryService } from "../services/api";
 import { removeAccents } from "../utils/stringUtils";
@@ -11,6 +11,7 @@ import WordNetworkBackground from "./WordNetworkBackground";
 import { useAuth } from "../AuthContext";
 
 const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
+  // États pour la recherche
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [definition, setDefinition] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,41 +19,52 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
   const [recentSearches, setRecentSearches] = useState([]);
   const { currentUser, isAuthenticated } = useAuth();
 
+  // Fonction de recherche de définition
   const searchWord = async (word) => {
     if (!word.trim()) return;
-  
+
     setLoading(true);
     setError(null);
-  
+
     try {
+      // Première tentative de recherche exacte
       const data = await dictionaryService.getDefinition(word);
-      
+
       const formattedDefinition = {
         word: data.word,
         category: data.category,
         definitions: [data.definition],
       };
-  
+
       setDefinition(formattedDefinition);
-      
+
+      // Ajouter aux recherches récentes
       if (!recentSearches.includes(word)) {
         const newSearches = [word, ...recentSearches.slice(0, 4)];
         setRecentSearches(newSearches);
-        localStorage.setItem("wordleRecentSearches", JSON.stringify(newSearches));
+        localStorage.setItem(
+          "wordleRecentSearches",
+          JSON.stringify(newSearches)
+        );
       }
     } catch (error) {
       try {
+        // Tentative avec le mot sans accents
         const normalizedWord = removeAccents(word.toLowerCase());
-        const data = await dictionaryService.getDefinitionByNormalized(normalizedWord);
-        
+        const data = await dictionaryService.getDefinitionByNormalized(
+          normalizedWord
+        );
+
         setDefinition({
           word: data.word,
           category: data.category,
           definitions: [data.definition],
-          original: word
+          original: word,
         });
       } catch (innerError) {
-        setError(`Le mot "${word}" n'a pas été trouvé dans notre dictionnaire.`);
+        setError(
+          `Le mot "${word}" n'a pas été trouvé dans notre dictionnaire.`
+        );
         setDefinition(null);
       }
     } finally {
@@ -60,12 +72,14 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
     }
   };
 
+  // Recherche au chargement si un terme initial est fourni
   useEffect(() => {
     if (initialSearchTerm) {
       searchWord(initialSearchTerm);
     }
   }, [initialSearchTerm]);
 
+  // Chargement des recherches récentes depuis le localStorage
   useEffect(() => {
     const savedSearches = localStorage.getItem("wordleRecentSearches");
     if (savedSearches) {
@@ -82,21 +96,17 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-4 relative overflow-hidden">
-      {/* Animation d'arrière-plan */}
       <WordNetworkBackground />
-      
-      {/* Header commun à toutes les pages */}
+
       <Header
         isAuthenticated={isAuthenticated}
         currentUser={currentUser}
         onNavigateHome={onBack}
         onNavigateToDictionary={() => {}}
       />
-      
-      {/* Espacement pour compenser le header fixe */}
+
       <div className="h-16"></div>
-      
-      {/* Contenu principal */}
+
       <div className="max-w-5xl w-full mx-auto z-10">
         <div className="flex items-center justify-between mb-6">
           <button
@@ -112,6 +122,7 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
           </h1>
         </div>
 
+        {/* Formulaire de recherche */}
         <div className="w-full backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-indigo-100/40 bg-white/80 mb-6">
           <form onSubmit={handleSubmit} className="flex">
             <input
@@ -130,9 +141,12 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
             </button>
           </form>
 
+          {/* Recherches récentes */}
           {recentSearches.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm text-indigo-700 font-medium">Recherches récentes:</p>
+              <p className="text-sm text-indigo-700 font-medium">
+                Recherches récentes:
+              </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {recentSearches.map((term) => (
                   <button
@@ -151,11 +165,14 @@ const DictionaryPage = ({ onBack, initialSearchTerm = "" }) => {
           )}
         </div>
 
+        {/* Résultats de recherche */}
         <div className="w-full backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-indigo-100/40 bg-white/80">
           {loading ? (
             <div className="flex justify-center items-center py-10">
               <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-300 border-t-indigo-600"></div>
-              <span className="ml-3 text-indigo-700">Recherche en cours...</span>
+              <span className="ml-3 text-indigo-700">
+                Recherche en cours...
+              </span>
             </div>
           ) : error ? (
             <div className="text-center py-8">

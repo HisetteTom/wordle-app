@@ -1,33 +1,31 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import React, { createContext, useState, useEffect, useContext } from "react";
+import { auth } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
-// Créer le contexte
+// Contexte pour gérer l'authentification dans toute l'application
 export const AuthContext = createContext();
 
-// Hook personnalisé pour utiliser le contexte d'authentification
+// Hook pour accéder facilement au contexte d'authentification
 export const useAuth = () => useContext(AuthContext);
 
-// Fournisseur du contexte
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Observer les changements d'état de l'authentification
+    // Surveille les changements d'état de connexion Firebase
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
     });
 
-    // Nettoyer l'abonnement lors du démontage
+    // Nettoyage lors du démontage du composant
     return unsubscribe;
   }, []);
 
-  // Les valeurs que nous voulons rendre disponibles
   const value = {
     currentUser,
-    isAuthenticated: !!currentUser
+    isAuthenticated: !!currentUser,
   };
 
   return (
