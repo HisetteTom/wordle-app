@@ -78,7 +78,7 @@ Le jeu propose plusieurs niveaux de difficulté en fonction de la longueur du mo
 
 1. **Cloner le dépôt**
    ```bash
-   git clone https://github.com/votre-username/wordle-app.git
+   git clone https://github.com/HisetteTom/wordle-app.git
    cd wordle-app
    ```
 
