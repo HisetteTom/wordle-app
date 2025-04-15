@@ -73,6 +73,9 @@ Le jeu propose plusieurs niveaux de difficulté en fonction de la longueur du mo
 
 ### Installation rapide
 
+> [!CAUTION]
+> Si vous utiliser un CPU ARM: Si vous avez des erreurs lors des `npm install`, supprimer le fichier `package-lock.json` et retaper la commande `npm install`
+
 1. **Cloner le dépôt**
    ```bash
    git clone https://github.com/votre-username/wordle-app.git
@@ -113,21 +116,21 @@ Pour jouer localement, **l'authentification Firebase n'est pas nécessaire à co
 Si vous souhaitez activer l'authentification et les fonctionnalités en ligne pour votre instance locale, suivez ces étapes:
 
 1. **Créer un projet Firebase**
-   - Allez sur [Firebase Console](https://console.firebase.google.com/)
+   - Allez sur **[Firebase Console](https://console.firebase.google.com/)**
    - Cliquez sur "Ajouter un projet" et suivez les instructions
    
 2. **Configurer l'authentification**
-   - Dans votre projet Firebase, allez dans "Authentication" dans le menu de gauche
-   - Cliquez sur "Commencer" puis activez la méthode "Adresse e-mail/Mot de passe"
+   - Dans votre projet Firebase, allez dans "Authentication" dans le menu **Créer** à gauche
+   - Cliquez sur "Commencer" puis activez seulement la méthode "Adresse e-mail/Mot de passe". N'activez pas l'option supplémentaire pour se connecter sans mot de passe avec un email.
    
 3. **Créer une base de données Firestore**
-   - Dans le menu de gauche, allez dans "Firestore Database"
+   - Dans le menu **Créer** de gauche, allez dans "Firestore Database"
    - Cliquez sur "Créer une base de données"
+   - - Sélectionnez la région la plus proche de vous (si disponible sinon laisser vide)
    - Choisissez le mode "production" ou "test"
-   - Sélectionnez la région la plus proche de vous
-
+   
 4. **Obtenez les informations de configuration**
-   - Allez dans les paramètres du projet
+   - Allez dans les paramètres du projet, via l'icone à côté de l'onglet vue d'ensemble du projet
    - Sélectionnez "Paramètres du projet"
    - Faites défiler jusqu'à "Vos applications" et cliquez sur l'icône Web
    - Enregistrez les informations de configuration Firebase
@@ -154,6 +157,8 @@ Si vous souhaitez activer l'authentification et les fonctionnalités en ligne po
         }
     }
     ```
+    > [!NOTE]  
+    > Le nom du projet est directement disponible dans la barre de recherche. Par exemple le mien est wordle-game-822bb
 
 6. **Configuration des règles Firestore**
    - Dans "Firestore Database" > "Règles"
