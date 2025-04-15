@@ -157,8 +157,8 @@ Si vous souhaitez activer l'authentification et les fonctionnalités en ligne po
         }
     }
     ```
-    > [!NOTE]  
-    > Le nom du projet est directement disponible dans la barre de recherche. Par exemple le mien est wordle-game-822bb
+> [!Note]
+> Le nom du projet est directement disponible dans la barre de recherche. Par exemple le mien est wordle-game-822bb
 
 6. **Configuration des règles Firestore**
    - Dans "Firestore Database" > "Règles"
