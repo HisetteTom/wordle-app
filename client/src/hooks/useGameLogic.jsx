@@ -43,6 +43,12 @@ export function useGameLogic(
       .fill(null)
       .map(() => Array(wordLength).fill(false))
   );
+  // Suivi des lettres éditées par l'utilisateur
+  const [userEdited, setUserEdited] = useState(
+    Array(maxAttempts)
+      .fill(null)
+      .map(() => Array(wordLength).fill(false))
+  );
 
   const { updateUserStats } = useGameStats(
     currentUser,
@@ -62,20 +68,22 @@ export function useGameLogic(
   const resetCurrentRow = () => {
     setAttempts((prev) => {
       const newAttempts = [...prev];
-
       const newRow = Array(wordLength).fill("");
-
-      if (currentAttempt > 0) {
-        for (let i = 0; i < wordLength; i++) {
-          if (preFilled[currentAttempt][i]) {
-            newRow[i] = attempts[currentAttempt - 1][i];
-          }
-        }
-      }
-
       newAttempts[currentAttempt] = newRow;
       return newAttempts;
     });
+
+    setUserEdited((prev) => {
+      const newEdited = prev.map((arr) => Array(wordLength).fill(false));
+      return newEdited;
+    });
+
+    setPreFilled((prev) => {
+      const newPreFilled = prev.map((arr) => [...arr]);
+      newPreFilled[currentAttempt] = Array(wordLength).fill(false);
+      return newPreFilled;
+    });
+
     setCurrentPosition(0);
   };
 
@@ -130,22 +138,48 @@ export function useGameLogic(
       // Pré-remplit les lettres correctes pour la ligne suivante
       const nextAttemptIndex = currentAttempt + 1;
 
+      const correctLetters = Array(wordLength).fill(null);
+
+      for (let attempt = 0; attempt < currentAttempt; attempt++) {
+        const results = attemptResults[attempt];
+        for (let i = 0; i < wordLength; i++) {
+          if (results && results[i] === "correct") {
+            correctLetters[i] = attempts[attempt][i];
+          }
+        }
+      }
+
+      // Ajouter AUSSI les résultats qu'on vient de calculer
+      for (let i = 0; i < wordLength; i++) {
+        if (result[i] === "correct") {
+          correctLetters[i] = currentWordArray[i];
+        }
+      }
+
+      // Mettre à jour preFilled avec toutes les positions correctes connues
       setPreFilled((prev) => {
         const newPreFilled = [...prev];
         for (let i = 0; i < wordLength; i++) {
-          newPreFilled[nextAttemptIndex][i] = result[i] === "correct";
+          newPreFilled[nextAttemptIndex][i] = correctLetters[i] !== null;
         }
         return newPreFilled;
       });
 
+      // Mettre à jour attempts avec toutes les lettres correctes connues
       setAttempts((prev) => {
         const newAttempts = [...prev];
         for (let i = 0; i < wordLength; i++) {
-          if (result[i] === "correct") {
-            newAttempts[nextAttemptIndex][i] = currentWordArray[i];
+          if (correctLetters[i] !== null) {
+            newAttempts[nextAttemptIndex][i] = correctLetters[i];
           }
         }
         return newAttempts;
+      });
+
+      setUserEdited((prev) => {
+        const newEdited = prev.map((arr) => [...arr]);
+        newEdited[nextAttemptIndex] = Array(wordLength).fill(false);
+        return newEdited;
       });
 
       setCurrentAttempt((prev) => prev + 1);
@@ -165,7 +199,11 @@ export function useGameLogic(
         newAttempts[currentAttempt][currentPosition - 1] = "";
         return newAttempts;
       });
-
+      setUserEdited((prev) => {
+        const newEdited = prev.map((arr) => [...arr]);
+        newEdited[currentAttempt][currentPosition - 1] = false;
+        return newEdited;
+      });
       setCurrentPosition(currentPosition - 1);
     } else if (key === "ENTER" && currentPosition === wordLength) {
       await submitAttempt();
@@ -179,7 +217,11 @@ export function useGameLogic(
         newAttempts[currentAttempt][currentPosition] = key;
         return newAttempts;
       });
-
+      setUserEdited((prev) => {
+        const newEdited = prev.map((arr) => [...arr]);
+        newEdited[currentAttempt][currentPosition] = true;
+        return newEdited;
+      });
       setCurrentPosition(currentPosition + 1);
     }
   };
@@ -205,6 +247,11 @@ export function useGameLogic(
     setGameWon(false);
     setErrorMessage("");
     setPreFilled(
+      Array(maxAttempts)
+        .fill(null)
+        .map(() => Array(wordLength).fill(false))
+    );
+    setUserEdited(
       Array(maxAttempts)
         .fill(null)
         .map(() => Array(wordLength).fill(false))
@@ -258,5 +305,6 @@ export function useGameLogic(
     resetGame,
     errorMessage,
     preFilled,
+    userEdited,
   };
 }

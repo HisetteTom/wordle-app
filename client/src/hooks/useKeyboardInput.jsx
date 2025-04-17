@@ -15,21 +15,12 @@ export function useKeyboardInput(
   const handleKeyPress = useCallback(
     (e) => {
       if (gameOver) return;
-      // Ignore les touches si le jeu est terminé
 
-      // Vérifie si la touche est une lettre et si la position actuelle est valide
+      //Handleinput va gérer toute la logique d'entrée de lettre
       if (/^[a-zA-Z]$/.test(e.key) && currentPosition < wordLength) {
-        const newAttempts = [...attempts];
-        newAttempts[currentAttempt][currentPosition] = e.key.toUpperCase();
-        setAttempts(newAttempts);
-        setCurrentPosition(currentPosition + 1);
+        handleInput(e.key.toUpperCase());
       } else if (e.key === "Backspace" && currentPosition > 0) {
-        // Vérifie si la touche est "Backspace" pour effacer une lettre
-        const newAttempts = [...attempts];
-        newAttempts[currentAttempt][currentPosition - 1] = "";
-        setAttempts(newAttempts);
-
-        setCurrentPosition(currentPosition - 1);
+        handleInput("BACK");
       } else if (e.key === "Enter" && currentPosition === wordLength) {
         handleInput("ENTER");
       } else if (e.key === "ArrowLeft" && currentPosition > 0) {
@@ -38,16 +29,7 @@ export function useKeyboardInput(
         setCurrentPosition(Math.min(currentPosition + 1, wordLength));
       }
     },
-    [
-      gameOver,
-      currentPosition,
-      wordLength,
-      attempts,
-      setAttempts,
-      currentAttempt,
-      setCurrentPosition,
-      handleInput,
-    ]
+    [gameOver, currentPosition, wordLength, handleInput, setCurrentPosition]
   );
 
   return { handleKeyPress };

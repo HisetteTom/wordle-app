@@ -7,6 +7,7 @@ function GameBoard({
   wordLength,
   gameWon,
   preFilled,
+  userEdited,
 }) {
   const rowRefs = useRef([]);
 
@@ -23,10 +24,6 @@ function GameBoard({
         winningRow.classList.remove("victory-animation");
         void winningRow.offsetWidth;
         winningRow.classList.add("victory-animation");
-        console.log(
-          "Animation de victoire appliquée à la ligne:",
-          currentAttempt
-        );
       }
     }
   }, [gameWon, currentAttempt]);
@@ -44,9 +41,16 @@ function GameBoard({
             {attempt.map((letter, letterIndex) => {
               // Déterminer si c'est une lettre pré-remplie
               const isPreFilled =
+                attemptIndex === currentAttempt &&
                 preFilled &&
                 preFilled[attemptIndex] &&
                 preFilled[attemptIndex][letterIndex];
+
+              // Vérifier si l'utilisateur a édité cette lettre
+              const isUserEditedLetter =
+                userEdited &&
+                userEdited[attemptIndex] &&
+                userEdited[attemptIndex][letterIndex];
 
               // Déterminer la couleur de l'arrière-plan
               let bgColor = "";
@@ -60,24 +64,36 @@ function GameBoard({
                 switch (attemptResults[attemptIndex][letterIndex]) {
                   case "correct":
                     bgColor = "bg-green-500 border-green-500";
-                    textColor = isPreFilled ? "text-gray-200" : "text-white";
+                    // La lettre est grise si pré-remplie et non éditée, sinon blanche
+                    textColor =
+                      isPreFilled && !isUserEditedLetter
+                        ? "text-gray-400"
+                        : "text-white";
                     break;
                   case "present":
                     bgColor = "bg-yellow-500 border-yellow-500";
-                    textColor = isPreFilled ? "text-gray-200" : "text-white";
+                    textColor =
+                      isPreFilled && !isUserEditedLetter
+                        ? "text-gray-400"
+                        : "text-white";
                     break;
                   case "absent":
                     bgColor = "bg-gray-500 border-gray-500";
-                    textColor = isPreFilled ? "text-gray-200" : "text-white";
+                    textColor =
+                      isPreFilled && !isUserEditedLetter
+                        ? "text-gray-400"
+                        : "text-white";
                     break;
                   default:
                     bgColor = letter ? "bg-gray-100" : "";
-                    textColor = isPreFilled ? "text-gray-400" : "";
+                    textColor =
+                      isPreFilled && !isUserEditedLetter ? "text-gray-400" : "";
                 }
               } else {
                 // Pour toutes les cellules normales
                 bgColor = letter ? "bg-gray-100" : "";
-                textColor = isPreFilled ? "text-gray-400" : "";
+                textColor =
+                  isPreFilled && !isUserEditedLetter ? "text-gray-400" : "";
               }
 
               // Animation pour les nouvelles lettres
@@ -99,8 +115,20 @@ function GameBoard({
                     ${animationClass}
                   `}
                 >
-                  <span className={textColor}>{letter}</span>
-                  {isPreFilled && (
+                  <span
+                    className={
+                      isPreFilled && !isUserEditedLetter
+                        ? "text-gray-400"
+                        : (attemptIndex < currentAttempt ||
+                            (gameWon && attemptIndex === currentAttempt)) &&
+                          attemptResults[attemptIndex]
+                        ? "text-white"
+                        : "text-black"
+                    }
+                  >
+                    {letter}
+                  </span>
+                  {isPreFilled && !isUserEditedLetter && (
                     <div className="absolute bottom-1 right-1 w-2 h-2 bg-gray-300 rounded-full"></div>
                   )}
                 </div>

@@ -76,6 +76,8 @@ function GamePage({
     gameOver,
     gameWon,
     errorMessage,
+    preFilled,
+    userEdited,
   } = useGameLogic(
     wordLength,
     maxAttempts,
@@ -208,6 +210,8 @@ function GamePage({
                   attemptResults={attemptResults}
                   wordLength={wordLength}
                   gameWon={gameWon}
+                  preFilled={preFilled}
+                  userEdited={userEdited}
                 />
               </div>
 
